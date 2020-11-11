@@ -15,8 +15,6 @@ namespace KanbanStockpile
     [StaticConstructorOnStartup]
     public static class KanbanStockpileLoader
     {
-        public static bool IsSameSpotInstalled;
-
         static KanbanStockpileLoader()
         {
             var harmony = new Harmony("net.ubergarm.rimworld.mods.kanbanstockpile");

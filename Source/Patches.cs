@@ -12,9 +12,10 @@ using Verse;
 
 namespace KanbanStockpile
 {
-    // Patch GUI
+    //********************
+    //ITab_Storage Patches
 	[HarmonyPatch(typeof(ITab_Storage), "TopAreaHeight", MethodType.Getter)]
-	static class TopAreaHeight
+	static class ITab_Storage_TopAreaHeight_Patch
 	{
 		public const float extraHeight = 24f;
 		//private float TopAreaHeight
@@ -25,7 +26,7 @@ namespace KanbanStockpile
 	}
 
 	[HarmonyPatch(typeof(ITab_Storage), "FillTab")]
-	static class FillTab
+	static class ITab_Storage_FillTab_Patch
 	{
 		//protected override void FillTab()
 		static MethodInfo GetTopAreaHeight = AccessTools.Property(typeof(ITab_Storage), "TopAreaHeight").GetGetMethod(true);
@@ -50,20 +51,20 @@ namespace KanbanStockpile
 					inst.Calls(GetTopAreaHeight))
 				{
 					firstTopAreaHeight = false;
-					yield return new CodeInstruction(OpCodes.Ldc_R4, TopAreaHeight.extraHeight);
+					yield return new CodeInstruction(OpCodes.Ldc_R4, ITab_Storage_TopAreaHeight_Patch.extraHeight);
 					yield return new CodeInstruction(OpCodes.Sub);
 				}
 
 				if(inst.Calls(BeginGroupInfo))
 				{
 					yield return new CodeInstruction(OpCodes.Ldarg_0);//ITab_Storage this
-					yield return new CodeInstruction(OpCodes.Call, AccessTools.Method(typeof(FillTab), nameof(DrawRanking)));
+					yield return new CodeInstruction(OpCodes.Call, AccessTools.Method(typeof(ITab_Storage_FillTab_Patch), nameof(DrawKanbanSettings)));
 				}
 			}
 		}
 
 		public static PropertyInfo SelStoreInfo = AccessTools.Property(typeof(ITab_Storage), "SelStoreSettingsParent");
-		public static void DrawRanking(ITab_Storage tab)
+		public static void DrawKanbanSettings(ITab_Storage tab)
 		{
 			IHaulDestination haulDestination = SelStoreInfo.GetValue(tab, null) as IHaulDestination;
 			if (haulDestination == null) return;
@@ -71,8 +72,8 @@ namespace KanbanStockpile
 			if (settings == null) return;
 
 			//ITab_Storage.WinSize = 300
-			float buttonMargin = TopAreaHeight.extraHeight + 4;
-			Rect rect = new Rect(0f, (float)GetTopAreaHeight.Invoke(tab, new object[] { }) - TopAreaHeight.extraHeight - 2, 280, TopAreaHeight.extraHeight);
+			float buttonMargin = ITab_Storage_TopAreaHeight_Patch.extraHeight + 4;
+			Rect rect = new Rect(0f, (float)GetTopAreaHeight.Invoke(tab, new object[] { }) - ITab_Storage_TopAreaHeight_Patch.extraHeight - 2, 280, ITab_Storage_TopAreaHeight_Patch.extraHeight);
 
            	//Slider
 			rect.x += buttonMargin;
@@ -92,8 +93,10 @@ namespace KanbanStockpile
 	}
 
 
+    //********************
+    //StoreUtility Patches
     [HarmonyPatch(typeof(StoreUtility), "NoStorageBlockersIn")]
-    public class StoreUtility_NoStorageBlockersInPost_Patch
+    public class StoreUtility_NoStorageBlockersIn_Patch
     {
         public static void Postfix(ref bool __result, IntVec3 c, Map map, Thing thing)
         {
@@ -114,11 +117,12 @@ namespace KanbanStockpile
     }
 
 
+    //********************
+    //StorageSettings Patches
     [HarmonyPatch(typeof(StorageSettings), nameof(StorageSettings.ExposeData))]
-    public class StorageSettings_ExposeData
+    public class StorageSettings_ExposeData_Patch
     {
-        [HarmonyPostfix]
-        public static void ExposeData(StorageSettings __instance)
+        public static void Postfix(StorageSettings __instance)
         {
             // The clipboard StorageSettings has no parent, so assume a null is the clipboard...
             string key = __instance?.owner?.ToString() ?? "___clipboard";
@@ -128,23 +132,9 @@ namespace KanbanStockpile
         }
     }
 
-
-	[HarmonyPatch(typeof(Zone_Stockpile), nameof(Zone_Stockpile.PostDeregister))]
-    static class Zone_Stockpile_PostDeregister_Patch {
-        public static void Postfix(Zone_Stockpile __instance) {
-            Log.Message("[DEBUG] Zone_Stockpile_PostDeregister_Patch.Postfix()");
-            if(State.Exists(__instance.ToString())) {
-                Log.Message("[DEBUG] Removing " + __instance.ToString());
-                State.Del(__instance.ToString());
-            }
-        }
-    }
-
-    // TODO patch changing the name of a stockpile to update State.db as well
-
     // TODO fixup the rest of this to update State db upon copyfrom
     [HarmonyPatch(typeof(StorageSettings), nameof(StorageSettings.CopyFrom))]
-	class StorageSettings_CopyFrom_Transpiler
+	class StorageSettings_CopyFrom_Patch
 	{
 		//public void CopyFrom(StorageSettings other)
 
@@ -166,4 +156,22 @@ namespace KanbanStockpile
 			}
 		}
 	}
+
+    //********************
+    //ZoneStockpile Patches
+	[HarmonyPatch(typeof(Zone_Stockpile), nameof(Zone_Stockpile.PostDeregister))]
+    static class Zone_Stockpile_PostDeregister_Patch
+    {
+        public static void Postfix(Zone_Stockpile __instance)
+        {
+            Log.Message("[DEBUG] Zone_Stockpile_PostDeregister_Patch.Postfix()");
+            if(State.Exists(__instance.ToString())) {
+                Log.Message("[DEBUG] Removing " + __instance.ToString());
+                State.Del(__instance.ToString());
+            }
+        }
+    }
+
+    // TODO patch changing the name of a stockpile to update State.db as well
+
 }
