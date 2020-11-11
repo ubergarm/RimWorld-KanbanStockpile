@@ -86,16 +86,16 @@ namespace KanbanStockpile
 			}
 		}
 
-		private static Dictionary<int, int> refillThreshold = new Dictionary<int, int>();
-        public static int getRefillThreshold(int settingsHash) {
-            if(refillThreshold.ContainsKey(settingsHash)) {
-                return refillThreshold[settingsHash];
+		private static Dictionary<string, int> refillThreshold = new Dictionary<string, int>();
+        public static int getRefillThreshold(string ownerName) {
+            if(refillThreshold.ContainsKey(ownerName)) {
+                return refillThreshold[ownerName];
             }
             return -1;
         }
         [SyncMethod]
-        public static void setRefillThreshold(int settingsHash, int rt) {
-            refillThreshold[settingsHash] = rt;
+        public static void setRefillThreshold(string ownerName, int rt) {
+            refillThreshold[ownerName] = rt;
         }
 		public static PropertyInfo SelStoreInfo = AccessTools.Property(typeof(ITab_Storage), "SelStoreSettingsParent");
 		public static void DrawRanking(ITab_Storage tab)
@@ -114,7 +114,7 @@ namespace KanbanStockpile
 			rect.width -= buttonMargin * 4;
 			Text.Font = GameFont.Small;
 
-            int srt = getRefillThreshold(settings.GetHashCode());
+            int srt = getRefillThreshold(settings.owner.ToString());
             if(srt == -1) {
                 srt = 100;
             }
@@ -123,10 +123,8 @@ namespace KanbanStockpile
 
             int tmp = (int)Widgets.HorizontalSlider(new Rect(0f, rect.yMin, rect.width, buttonMargin), srt, 0f, 100f, false, label, null, null, 1f);
             if(tmp != srt) {
-                Log.Message("[DEBUG] Changed Stack Refill Threshold for settings w/ owner: " + settings.owner);
-                Log.Message("[DEBUG] Changed Stack Refill Threshold for settings hash: " + settings.GetHashCode());
-                Log.Message("[DEBUG] Changed Stack Refill Threshold for haulDestination: " + haulDestination);
-                setRefillThreshold(settings.GetHashCode(), tmp);
+                Log.Message("[DEBUG] Changed Stack Refill Threshold for settings with haulDestination named: " + settings.owner.ToString());
+                setRefillThreshold(settings.owner.ToString(), tmp);
             }
 		}
 	}
@@ -146,7 +144,7 @@ namespace KanbanStockpile
             int srt = 100;
             SlotGroup slotGroup=c.GetSlotGroup(map);
             if( (slotGroup != null) && (slotGroup.Settings != null) ) {
-                srt = FillTab.getRefillThreshold(slotGroup.Settings.GetHashCode());
+                srt = FillTab.getRefillThreshold(slotGroup.Settings.owner.ToString());
                 if(srt == -1) {
                     srt = 100;
                 }
@@ -164,13 +162,13 @@ namespace KanbanStockpile
         public static void ExposeData(StorageSettings __instance)
         {
             //StorageLimits storageLimits = StorageLimits.GetLimitSettings(__instance);
-            int srt = FillTab.getRefillThreshold(__instance.GetHashCode());
+            int srt = FillTab.getRefillThreshold(__instance.owner.ToString());
             if(srt == -1) {
                 srt = 100;
             }
             Scribe_Values.Look(ref srt, "refillThreshold", 100, false);
 
-            FillTab.setRefillThreshold(__instance.GetHashCode(), srt);
+            FillTab.setRefillThreshold(__instance.owner.ToString(), srt);
         }
     }
 
