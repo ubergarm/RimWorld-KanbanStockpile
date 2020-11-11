@@ -1,4 +1,4 @@
 <?xml version="1.0" encoding="utf-8" ?>
 <LanguageData>
-    <TD.StackRefillThreshold>Stack Refill Threshold</TD.StackRefillThreshold>
+    <TD.StackRefillThreshold>Stack Refill Threshold  {0}%</TD.StackRefillThreshold>
 </LanguageData>

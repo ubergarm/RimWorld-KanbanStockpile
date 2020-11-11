@@ -86,6 +86,8 @@ namespace KanbanStockpile
 			}
 		}
 
+
+        private static float srt = 100f;
 		public static PropertyInfo SelStoreInfo = AccessTools.Property(typeof(ITab_Storage), "SelStoreSettingsParent");
 		public static void DrawRanking(ITab_Storage tab)
 		{
@@ -102,8 +104,7 @@ namespace KanbanStockpile
 			rect.x += buttonMargin;
 			rect.width -= buttonMargin * 4;
 			Text.Font = GameFont.Small;
-            string label = "TD.StackRefillThreshold".Translate();
-            float srt = 100f;
+            string label = "TD.StackRefillThreshold".Translate(srt);
             srt = Widgets.HorizontalSlider(new Rect(0f, rect.yMin, rect.width, buttonMargin), srt, 0f, 100f, false, label, null, null, 1f);
 		}
 	}
