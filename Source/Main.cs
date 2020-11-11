@@ -86,17 +86,6 @@ namespace KanbanStockpile
 			}
 		}
 
-		public static Dictionary<string, int> refillThreshold = new Dictionary<string, int>();
-        public static int getRefillThreshold(string ownerName) {
-            if(refillThreshold.ContainsKey(ownerName)) {
-                return refillThreshold[ownerName];
-            }
-            return -1;
-        }
-        [SyncMethod]
-        public static void setRefillThreshold(string ownerName, int rt) {
-            refillThreshold[ownerName] = rt;
-        }
 		public static PropertyInfo SelStoreInfo = AccessTools.Property(typeof(ITab_Storage), "SelStoreSettingsParent");
 		public static void DrawRanking(ITab_Storage tab)
 		{
@@ -114,7 +103,7 @@ namespace KanbanStockpile
 			rect.width -= buttonMargin * 4;
 			Text.Font = GameFont.Small;
 
-            int srt = getRefillThreshold(settings.owner.ToString());
+            int srt = State.Get(settings.owner.ToString());
             if(srt == -1) {
                 srt = 100;
             }
@@ -124,7 +113,7 @@ namespace KanbanStockpile
             int tmp = (int)Widgets.HorizontalSlider(new Rect(0f, rect.yMin, rect.width, buttonMargin), srt, 0f, 100f, false, label, null, null, 1f);
             if(tmp != srt) {
                 Log.Message("[DEBUG] Changed Stack Refill Threshold for settings with haulDestination named: " + settings.owner.ToString());
-                setRefillThreshold(settings.owner.ToString(), tmp);
+                State.Set(settings.owner.ToString(), tmp);
             }
 		}
 	}
@@ -144,7 +133,7 @@ namespace KanbanStockpile
             int srt = 100;
             SlotGroup slotGroup=c.GetSlotGroup(map);
             if( (slotGroup != null) && (slotGroup.Settings != null) ) {
-                srt = FillTab.getRefillThreshold(slotGroup.Settings.owner.ToString());
+                srt = State.Get(slotGroup.Settings.owner.ToString());
                 if(srt == -1) {
                     srt = 100;
                 }
@@ -164,11 +153,11 @@ namespace KanbanStockpile
             // The clipboard StorageSettings has no parent, so assume a null is the clipboard...
             string key = __instance?.owner?.ToString() ?? "___clipboard";
             Log.Message("[DEBUG][MP] ExposeData() with owner name: " + key);
-            int srt = FillTab.getRefillThreshold(key);
+            int srt = State.Get(key);
             if(srt == -1) {
                 srt = 100;
             }
-            Scribe_Values.Look(ref srt, "refillThreshold", 100, false);
+            Scribe_Values.Look(ref srt, "stackRefillThreshold", 100, false);
         }
     }
 
@@ -177,9 +166,9 @@ namespace KanbanStockpile
     static class Zone_Stockpile_PostDeregister_Patch {
         public static void Postfix(Zone_Stockpile __instance) {
             Log.Message("[DEBUG] Zone_Stockpile_PostDeregister_Patch.Postfix()");
-            if(FillTab.refillThreshold.ContainsKey(__instance.ToString())) {
+            if(State.Contains(__instance.ToString())) {
                 Log.Message("[DEBUG] Removing " + __instance.ToString());
-                FillTab.refillThreshold.Remove(__instance.ToString());
+                State.Del(__instance.ToString());
             }
         }
     }
