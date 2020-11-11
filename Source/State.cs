@@ -10,6 +10,8 @@ using HarmonyLib;
 using Multiplayer.API;
 using Verse;
 
+// Implement a static state storage database using Set/Get/Del/Exists kind of like redis
+// Make sure to SyncMethod for any method that changes internal state for multiplayer
 namespace KanbanStockpile
 {
     static class State
@@ -18,7 +20,7 @@ namespace KanbanStockpile
 
         private static Dictionary<string, int> db = new Dictionary<string, int>();
 
-        public static bool Contains(string label) {
+        public static bool Exists(string label) {
             return db.ContainsKey(label);
         }
 
