@@ -100,9 +100,11 @@ namespace KanbanStockpile
 
            	//Label
 			rect.x += buttonMargin;
-			rect.width -= buttonMargin * 3;
+			rect.width -= buttonMargin * 4;
 			Text.Font = GameFont.Small;
-            Widgets.Label(rect, "TD.StackRefillThreshold".Translate());
+            string label = "TD.StackRefillThreshold".Translate();
+            float srt = 100f;
+            srt = Widgets.HorizontalSlider(new Rect(0f, rect.yMin, rect.width, buttonMargin), srt, 0f, 100f, false, label, null, null, 1f);
 		}
 	}
 
