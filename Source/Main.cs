@@ -131,6 +131,24 @@ namespace KanbanStockpile
 		}
 	}
 
+    [HarmonyPatch(typeof(StorageSettings), nameof(StorageSettings.ExposeData))]
+    public class StorageSettings_ExposeData
+    {
+        [HarmonyPostfix]
+        public static void ExposeData(StorageSettings __instance)
+        {
+            //StorageLimits storageLimits = StorageLimits.GetLimitSettings(__instance);
+            int srt = FillTab.getRefillThreshold(__instance.GetHashCode());
+            if(srt == -1) {
+                srt = 100;
+            }
+            Scribe_Values.Look(ref srt, "refillThreshold", 100, false);
+
+            FillTab.setRefillThreshold(__instance.GetHashCode(), srt);
+        }
+    }
+
+
 	[HarmonyPatch(typeof(ThingFilterUI), nameof(ThingFilterUI.DoThingFilterConfigWindow))]
 	static class ThingFilterUI_DoThingFilterConfigWindow_Patch
 	{
