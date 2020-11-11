@@ -161,14 +161,14 @@ namespace KanbanStockpile
         [HarmonyPostfix]
         public static void ExposeData(StorageSettings __instance)
         {
-            //StorageLimits storageLimits = StorageLimits.GetLimitSettings(__instance);
-            int srt = FillTab.getRefillThreshold(__instance.owner.ToString());
+            // The clipboard StorageSettings has no parent, so assume a null is the clipboard...
+            string key = __instance?.owner?.ToString() ?? "___clipboard";
+            Log.Message("[DEBUG][MP] ExposeData() with owner name: " + key);
+            int srt = FillTab.getRefillThreshold(key);
             if(srt == -1) {
                 srt = 100;
             }
             Scribe_Values.Look(ref srt, "refillThreshold", 100, false);
-
-            FillTab.setRefillThreshold(__instance.owner.ToString(), srt);
         }
     }
 
@@ -185,4 +185,31 @@ namespace KanbanStockpile
     }
 
     // TODO patch changing the name of a stockpile to update State.db as well
+
+    // TODO fixup the rest of this to update State db upon copyfrom
+    [HarmonyPatch(typeof(StorageSettings), nameof(StorageSettings.CopyFrom))]
+	class StorageSettings_CopyFrom_Transpiler
+	{
+		//public void CopyFrom(StorageSettings other)
+
+		public static IEnumerable<CodeInstruction> Transpiler(IEnumerable<CodeInstruction> instructions)
+		{
+            //private void TryNotifyChanged()
+			MethodInfo TryNotifyChangedInfo = AccessTools.Method(typeof(StorageSettings), "TryNotifyChanged");
+
+			foreach (CodeInstruction i in instructions)
+			{
+				if(i.Calls(TryNotifyChangedInfo))
+				{
+					////RankComp.CopyFrom(__instance, other);
+					//yield return new CodeInstruction(OpCodes.Ldarg_0);//this
+					//yield return new CodeInstruction(OpCodes.Ldarg_1);//other
+					//yield return new CodeInstruction(OpCodes.Call, AccessTools.Method(typeof(RankComp), nameof(RankComp.CopyFrom)));
+				}
+				yield return i;
+			}
+		}
+	}
+
+
 }
