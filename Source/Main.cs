@@ -86,7 +86,7 @@ namespace KanbanStockpile
 			}
 		}
 
-		private static Dictionary<string, int> refillThreshold = new Dictionary<string, int>();
+		public static Dictionary<string, int> refillThreshold = new Dictionary<string, int>();
         public static int getRefillThreshold(string ownerName) {
             if(refillThreshold.ContainsKey(ownerName)) {
                 return refillThreshold[ownerName];
@@ -173,29 +173,16 @@ namespace KanbanStockpile
     }
 
 
-	[HarmonyPatch(typeof(ThingFilterUI), nameof(ThingFilterUI.DoThingFilterConfigWindow))]
-	static class ThingFilterUI_DoThingFilterConfigWindow_Patch
-	{
-        public static void Prefix(ref Rect rect)
-        {
-            //Log.Message("[DEBUG] ThingFilterUI_DoThingFilterConfigWindow_Patch.Prefix()");
-            //ITab_Storage tab = Patch_ITab_StorageFillTabs.currentTab;
-            //if (tab == null)
-            //    return;
-            //rect.yMin += 100f;
+	[HarmonyPatch(typeof(Zone_Stockpile), nameof(Zone_Stockpile.PostDeregister))]
+    static class Zone_Stockpile_PostDeregister_Patch {
+        public static void Postfix(Zone_Stockpile __instance) {
+            Log.Message("[DEBUG] Zone_Stockpile_PostDeregister_Patch.Postfix()");
+            if(FillTab.refillThreshold.ContainsKey(__instance.ToString())) {
+                Log.Message("[DEBUG] Removing " + __instance.ToString());
+                FillTab.refillThreshold.Remove(__instance.ToString());
+            }
         }
+    }
 
-        public static void Postfix(ref Rect rect)
-        {
-            //Log.Message("[DEBUG] ThingFilterUI_DoThingFilterConfigWindow_Patch.Postfix()");
-            //ITab_Storage tab = Patch_ITab_StorageFillTabs.currentTab;
-            //if (tab == null)
-            //    return;
-            //IStoreSettingsParent storeSettingsParent = (IStoreSettingsParent)typeof(ITab_Storage).GetProperty("SelStoreSettingsParent", BindingFlags.NonPublic | BindingFlags.Instance).GetGetMethod(true).Invoke(tab, new object[0]);
-            //StorageSettings settings = storeSettingsParent.GetStoreSettings();
-            //StorageLimits limitSettings = StorageLimits.GetLimitSettings(settings);
-        }
-
-	}
-
+    // TODO patch changing the name of a stockpile to update State.db as well
 }
