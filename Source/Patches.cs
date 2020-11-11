@@ -190,6 +190,22 @@ namespace KanbanStockpile
         }
     }
 
-    // TODO patch changing the name of a stockpile to update State.db as well
+    //********************
+    //Dialog_RenameZone Patches
+    [HarmonyPatch(typeof(Dialog_RenameZone), "SetName")]
+    static class Dialog_RenameZone_SetName_Patch
+    {
+        public static void Prefix(Zone ___zone, string name)
+        {
+            //private Zone zone;
+            string oldName = ___zone?.label ?? "N/A";
 
+            Log.Message("[DEBUG] Dialog_RenameZone.SetName() oldName: " + oldName);
+            Log.Message("[DEBUG] Dialog_RenameZone.SetName() newName: " + name);
+            if(oldName == "N/A") return;
+
+            State.Set(name, State.Get(oldName));
+            State.Del(oldName);
+        }
+    }
 }

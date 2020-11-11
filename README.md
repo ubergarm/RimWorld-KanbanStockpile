@@ -3,9 +3,10 @@ Kanban Stockpile
 A RimWorld mod adding a refill percent to stockpiles.
 
 ## TODO
-- [ ] patch changing stockpile name to update the dict
-- [ ] refactor code better organized into more files
+- [x] patch changing stockpile name to update the dict
+- [x] refactor code better organized into more files
 - [ ] look into lwm deep storage etc
+- [x] fixup copy/paste
 
 ## References
 * [SatisfiedStorage](https://steamcommunity.com/sharedfiles/filedetails/?id=2003354028)
