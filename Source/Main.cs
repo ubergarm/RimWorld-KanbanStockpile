@@ -131,6 +131,32 @@ namespace KanbanStockpile
 		}
 	}
 
+
+    [HarmonyPatch(typeof(StoreUtility), "NoStorageBlockersIn")]
+    public class StoreUtility_NoStorageBlockersInPost_Patch
+    {
+        public static void Postfix(ref bool __result, IntVec3 c, Map map, Thing thing)
+        {
+            //FALSE IF ITS TOO FULL
+            //TRUE IF THERE IS EMPTY SPACE
+
+            //don't fill it if its already too full
+            if (__result == false) return;
+
+            int srt = 100;
+            SlotGroup slotGroup=c.GetSlotGroup(map);
+            if( (slotGroup != null) && (slotGroup.Settings != null) ) {
+                srt = FillTab.getRefillThreshold(slotGroup.Settings.GetHashCode());
+                if(srt == -1) {
+                    srt = 100;
+                }
+            }
+
+            __result &= !map.thingGrid.ThingsListAt(c).Any(t => t.def.EverStorable(false) && t.stackCount >= thing.def.stackLimit * (srt / 100f));
+        }
+    }
+
+
     [HarmonyPatch(typeof(StorageSettings), nameof(StorageSettings.ExposeData))]
     public class StorageSettings_ExposeData
     {
