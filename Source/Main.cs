@@ -86,8 +86,17 @@ namespace KanbanStockpile
 			}
 		}
 
-
-        private static float srt = 100f;
+		private static Dictionary<int, int> refillThreshold = new Dictionary<int, int>();
+        public static int getRefillThreshold(int settingsHash) {
+            if(refillThreshold.ContainsKey(settingsHash)) {
+                return refillThreshold[settingsHash];
+            }
+            return -1;
+        }
+        [SyncMethod]
+        public static void setRefillThreshold(int settingsHash, int rt) {
+            refillThreshold[settingsHash] = rt;
+        }
 		public static PropertyInfo SelStoreInfo = AccessTools.Property(typeof(ITab_Storage), "SelStoreSettingsParent");
 		public static void DrawRanking(ITab_Storage tab)
 		{
@@ -96,16 +105,29 @@ namespace KanbanStockpile
 			StorageSettings settings = haulDestination.GetStoreSettings();
 			if (settings == null) return;
 
-			float buttonMargin = TopAreaHeight.extraHeight + 4;
 			//ITab_Storage.WinSize = 300
+			float buttonMargin = TopAreaHeight.extraHeight + 4;
 			Rect rect = new Rect(0f, (float)GetTopAreaHeight.Invoke(tab, new object[] { }) - TopAreaHeight.extraHeight - 2, 280, TopAreaHeight.extraHeight);
 
-           	//Label
+           	//Slider
 			rect.x += buttonMargin;
 			rect.width -= buttonMargin * 4;
 			Text.Font = GameFont.Small;
+
+            int srt = getRefillThreshold(settings.GetHashCode());
+            if(srt == -1) {
+                srt = 100;
+            }
+
             string label = "TD.StackRefillThreshold".Translate(srt);
-            srt = Widgets.HorizontalSlider(new Rect(0f, rect.yMin, rect.width, buttonMargin), srt, 0f, 100f, false, label, null, null, 1f);
+
+            int tmp = (int)Widgets.HorizontalSlider(new Rect(0f, rect.yMin, rect.width, buttonMargin), srt, 0f, 100f, false, label, null, null, 1f);
+            if(tmp != srt) {
+                Log.Message("[DEBUG] Changed Stack Refill Threshold for settings w/ owner: " + settings.owner);
+                Log.Message("[DEBUG] Changed Stack Refill Threshold for settings hash: " + settings.GetHashCode());
+                Log.Message("[DEBUG] Changed Stack Refill Threshold for haulDestination: " + haulDestination);
+                setRefillThreshold(settings.GetHashCode(), tmp);
+            }
 		}
 	}
 
@@ -114,7 +136,7 @@ namespace KanbanStockpile
 	{
         public static void Prefix(ref Rect rect)
         {
-            Log.Message("[DEBUG] ThingFilterUI_DoThingFilterConfigWindow_Patch.Prefix()");
+            //Log.Message("[DEBUG] ThingFilterUI_DoThingFilterConfigWindow_Patch.Prefix()");
             //ITab_Storage tab = Patch_ITab_StorageFillTabs.currentTab;
             //if (tab == null)
             //    return;
@@ -123,7 +145,7 @@ namespace KanbanStockpile
 
         public static void Postfix(ref Rect rect)
         {
-            Log.Message("[DEBUG] ThingFilterUI_DoThingFilterConfigWindow_Patch.Postfix()");
+            //Log.Message("[DEBUG] ThingFilterUI_DoThingFilterConfigWindow_Patch.Postfix()");
             //ITab_Storage tab = Patch_ITab_StorageFillTabs.currentTab;
             //if (tab == null)
             //    return;
