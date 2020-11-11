@@ -15,10 +15,21 @@ namespace KanbanStockpile
     [StaticConstructorOnStartup]
     public static class KanbanStockpileLoader
     {
+        public static bool IsLWMDeepStorageLoaded;
+
         static KanbanStockpileLoader()
         {
+
             var harmony = new Harmony("net.ubergarm.rimworld.mods.kanbanstockpile");
             harmony.PatchAll();
+
+            if (ModLister.GetActiveModWithIdentifier("LWM.DeepStorage") != null) {
+                IsLWMDeepStorageLoaded = true;
+                Log.Message("[KanbanStockpile] Detected LWM Deep Storage is loaded!");
+            } else {
+                IsLWMDeepStorageLoaded = false;
+                Log.Message("[KanbanStockpile] Did *NOT* detect LWM Deep Storage...");
+            }
 
             if (MP.enabled) {
                 MP.RegisterAll();

@@ -10,6 +10,11 @@ using HarmonyLib;
 using Multiplayer.API;
 using Verse;
 
+// LWM.DeepStorage and Mehni PickUpAndHaul Dependency
+// https://github.com/Mehni/PickUpAndHaul/tree/master/1.1/Assemblies
+// sha1sum 27c0f6a544ff7c69bad900549e96b3460c8edbc2  DLLs/IHoldMultipleThings.dll
+using IHoldMultipleThings;
+
 namespace KanbanStockpile
 {
     //********************
@@ -82,11 +87,11 @@ namespace KanbanStockpile
 
             int srt = State.Get(settings.owner.ToString());
 
-            string label = "TD.StackRefillThreshold".Translate(srt);
+            string label = "LD.StackRefillThreshold".Translate(srt);
 
             int tmp = (int)Widgets.HorizontalSlider(new Rect(0f, rect.yMin, rect.width, buttonMargin), srt, 0f, 100f, false, label, null, null, 1f);
             if(tmp != srt) {
-                Log.Message("[DEBUG] Changed Stack Refill Threshold for settings with haulDestination named: " + settings.owner.ToString());
+                Log.Message("[KanbanStockpile] Changed Stack Refill Threshold for settings with haulDestination named: " + settings.owner.ToString());
                 State.Set(settings.owner.ToString(), tmp);
             }
 		}
@@ -100,18 +105,60 @@ namespace KanbanStockpile
     {
         public static void Postfix(ref bool __result, IntVec3 c, Map map, Thing thing)
         {
-            //FALSE IF ITS TOO FULL
-            //TRUE IF THERE IS EMPTY SPACE
+            //returning false means storage is considered full
+            //returning true means storage still has space available
 
-            //don't fill it if its already too full
+            //its already full
             if (__result == false) return;
 
             int srt = 100;
             SlotGroup slotGroup=c.GetSlotGroup(map);
-            if( (slotGroup != null) && (slotGroup.Settings != null) ) {
+            if( (slotGroup != null) && (slotGroup.Settings != null) )
+            {
                 srt = State.Get(slotGroup.Settings.owner.ToString());
             }
 
+            // Handle LWM Deep Storage components which use Mehni's PickUpAndHaul IHoldMultipleThings
+            if (KanbanStockpileLoader.IsLWMDeepStorageLoaded)
+            {
+                foreach(Thing thisthing in map.thingGrid.ThingsListAt(c))
+                {
+                    ThingWithComps th = thisthing as ThingWithComps;
+                    if (th == null) continue;
+                    var allComps = th.AllComps;
+
+                    if (allComps != null)
+                    {
+                        foreach (var comp in allComps)
+                        {
+                            if (comp is IHoldMultipleThings.IHoldMultipleThings)
+                            {
+                                int capacity = 0;
+                                IHoldMultipleThings.IHoldMultipleThings thiscomp = (IHoldMultipleThings.IHoldMultipleThings)comp;
+
+                                thiscomp.CapacityAt(thing, c, map, out capacity);
+                                // if total capacity is larger than the stackLimit (full stack available)
+                                //    Allow hauling (other choices are valid)
+                                // if (capacity > thing.def.stackLimit) return true;
+                                // only haul if count is below threshold
+                                //   which is equivalent to availability being above threshold:
+                                //            Log.Message("capacity = " + capacity);
+                                //            Log.Message("thing.def.stackLimit = " +thing.def.stackLimit);
+                                float var = (100f * (float)capacity / thing.def.stackLimit);
+
+                                //100 - num is necessary because capacity gives empty space not full space
+                                __result = var > (100 - srt);
+                                //      if (__result == false){
+                                //          Log.Message("ITS TOO FULL stop yey");
+                                //      }
+                                return;
+                            }
+                        }
+                    }
+                }
+            }
+
+            // Send back the results modified by Stack Refill Threshold
             __result &= !map.thingGrid.ThingsListAt(c).Any(t => t.def.EverStorable(false) && t.stackCount >= thing.def.stackLimit * (srt / 100f));
         }
     }
@@ -124,9 +171,9 @@ namespace KanbanStockpile
     {
         public static void Postfix(StorageSettings __instance)
         {
-            // The clipboard StorageSettings has no parent, so assume a null is the clipboard...
+            // The clipboard StorageSettings has no owner, so assume a null is the clipboard...
             string label = __instance?.owner?.ToString() ?? "___clipboard";
-            Log.Message("[DEBUG] ExposeData() with owner name: " + label);
+            Log.Message("[KanbanStockpile] ExposeData() with owner name: " + label);
             int srt = State.Get(label);
 
             if (Scribe.mode == LoadSaveMode.Saving)
@@ -149,7 +196,7 @@ namespace KanbanStockpile
 		//public void CopyFrom(StorageSettings other)
         public static void CopyFrom(StorageSettings __instance, StorageSettings other)
         {
-            Log.Message("[DEBUG] CopyFrom()");
+            Log.Message("[KanbanStockpile] CopyFrom()");
             string label = other?.owner?.ToString() ?? "___clipboard";
             int srt = State.Get(label);
             label = __instance?.owner?.ToString() ?? "___clipboard";
@@ -182,9 +229,9 @@ namespace KanbanStockpile
     {
         public static void Postfix(Zone_Stockpile __instance)
         {
-            Log.Message("[DEBUG] Zone_Stockpile_PostDeregister_Patch.Postfix()");
+            Log.Message("[KanbanStockpile] Zone_Stockpile_PostDeregister_Patch.Postfix()");
             if(State.Exists(__instance.ToString())) {
-                Log.Message("[DEBUG] Removing " + __instance.ToString());
+                Log.Message("[KanbanStockpile] Removing " + __instance.ToString());
                 State.Del(__instance.ToString());
             }
         }
@@ -200,8 +247,8 @@ namespace KanbanStockpile
             //private Zone zone;
             string oldName = ___zone?.label ?? "N/A";
 
-            Log.Message("[DEBUG] Dialog_RenameZone.SetName() oldName: " + oldName);
-            Log.Message("[DEBUG] Dialog_RenameZone.SetName() newName: " + name);
+            Log.Message("[KanbanStockpile] Dialog_RenameZone.SetName() oldName: " + oldName);
+            Log.Message("[KanbanStockpile] Dialog_RenameZone.SetName() newName: " + name);
             if(oldName == "N/A") return;
 
             State.Set(name, State.Get(oldName));

@@ -5,7 +5,8 @@ A RimWorld mod adding a refill percent to stockpiles.
 ## TODO
 - [x] patch changing stockpile name to update the dict
 - [x] refactor code better organized into more files
-- [ ] look into lwm deep storage etc
+- [x] add lwm deep storage iholdmultiplethings comp support
+- [ ] consider adding simple duplicate stack limit feature
 - [x] fixup copy/paste
 
 ## References

@@ -18,7 +18,7 @@ namespace KanbanStockpile
     {
         private static int defaultStackRefillThreshold = 100;
 
-        // key is a string from Verse.Zone.label (or pass in "___clipboard" as its parent zone is null)
+        // key is a string from Verse.Zone.label (or pass in "___clipboard" as clipboard's owner is null)
         // val is an int whole number in range [0,100]
         private static Dictionary<string, int> db = new Dictionary<string, int>();
 
