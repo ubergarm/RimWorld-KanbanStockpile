@@ -68,16 +68,7 @@ namespace KanbanStockpile
 			{
 				CodeInstruction inst = instList[i];
 
-                if (inst.LoadsField(filterInfo) &&
-					instList[i + 8].Calls(DoThingFilterConfigWindowInfo))
-				{
-					//instead of settings.filter, do RankComp.GetFilter(settings, curRank)
-					//yield return new CodeInstruction(OpCodes.Ldsfld, AccessTools.Field(typeof(FillTab), "curRank"));
-					//yield return new CodeInstruction(OpCodes.Call, AccessTools.Method(typeof(RankComp), "GetFilter"));
-                    yield return inst;
-				}
-				else
-					yield return inst;
+                yield return inst;
 
 				if (firstTopAreaHeight &&
 					inst.Calls(GetTopAreaHeight))
