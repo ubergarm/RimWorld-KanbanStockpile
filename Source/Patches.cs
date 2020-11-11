@@ -125,18 +125,36 @@ namespace KanbanStockpile
         public static void Postfix(StorageSettings __instance)
         {
             // The clipboard StorageSettings has no parent, so assume a null is the clipboard...
-            string key = __instance?.owner?.ToString() ?? "___clipboard";
-            Log.Message("[DEBUG][MP] ExposeData() with owner name: " + key);
-            int srt = State.Get(key);
-            Scribe_Values.Look(ref srt, "stackRefillThreshold", 100, false);
+            string label = __instance?.owner?.ToString() ?? "___clipboard";
+            Log.Message("[DEBUG] ExposeData() with owner name: " + label);
+            int srt = State.Get(label);
+
+            if (Scribe.mode == LoadSaveMode.Saving)
+            {
+                // this mode implicitly takes the value currently in srt and saves it out
+                Scribe_Values.Look(ref srt, "stackRefillThreshold", 100, true);
+            }
+            else if (Scribe.mode == LoadSaveMode.LoadingVars)
+            {
+                // this mode implicitly loads some other value into this instance of srt
+                Scribe_Values.Look(ref srt, "stackRefillThreshold", 100, false);
+                State.Set(label, srt);
+            }
         }
     }
 
-    // TODO fixup the rest of this to update State db upon copyfrom
     [HarmonyPatch(typeof(StorageSettings), nameof(StorageSettings.CopyFrom))]
 	class StorageSettings_CopyFrom_Patch
 	{
 		//public void CopyFrom(StorageSettings other)
+        public static void CopyFrom(StorageSettings __instance, StorageSettings other)
+        {
+            Log.Message("[DEBUG] CopyFrom()");
+            string label = other?.owner?.ToString() ?? "___clipboard";
+            int srt = State.Get(label);
+            label = __instance?.owner?.ToString() ?? "___clipboard";
+            State.Set(label, srt);
+        }
 
 		public static IEnumerable<CodeInstruction> Transpiler(IEnumerable<CodeInstruction> instructions)
 		{
@@ -147,10 +165,10 @@ namespace KanbanStockpile
 			{
 				if(i.Calls(TryNotifyChangedInfo))
 				{
-					////RankComp.CopyFrom(__instance, other);
-					//yield return new CodeInstruction(OpCodes.Ldarg_0);//this
-					//yield return new CodeInstruction(OpCodes.Ldarg_1);//other
-					//yield return new CodeInstruction(OpCodes.Call, AccessTools.Method(typeof(RankComp), nameof(RankComp.CopyFrom)));
+					//RankComp.CopyFrom(__instance, other);
+					yield return new CodeInstruction(OpCodes.Ldarg_0);//this
+					yield return new CodeInstruction(OpCodes.Ldarg_1);//other
+					yield return new CodeInstruction(OpCodes.Call, AccessTools.Method(typeof(StorageSettings_CopyFrom_Patch), nameof(StorageSettings_CopyFrom_Patch.CopyFrom)));
 				}
 				yield return i;
 			}
