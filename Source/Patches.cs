@@ -103,6 +103,36 @@ namespace KanbanStockpile
     [HarmonyPatch(typeof(StoreUtility), "NoStorageBlockersIn")]
     public class StoreUtility_NoStorageBlockersIn_Patch
     {
+
+        // TODO: add duplicate stacks limit
+        public static bool NewStackAllowed(SlotGroup slotGroup, IntVec3 c, Map map, Thing t)
+        {
+            // Log.Message("Checking for duplicates");
+            //int dupStackLimit = StorageLimits.GetLimitSettings(slotGroup.Settings).dupStackLimit;
+            // FIXME TESTING
+            int dupStackLimit = 1;
+            int numDuplicates = 0;
+            foreach (IntVec3 cell in slotGroup.CellsList)
+            {
+                if (cell != c)
+                {
+                    Thing thing2 = map.thingGrid.ThingAt(cell, t.def);
+                    if (thing2 != null)
+                    {
+                        if (thing2.CanStackWith(t) ||
+                           (t.def.stackLimit == 1 && t.def.defName == thing2.def.defName))
+                        {
+                            numDuplicates++;
+                            if (numDuplicates == dupStackLimit)
+                                return false;
+                        }
+                    }
+                }
+            }
+            return true;
+        }
+
+
         public static void Postfix(ref bool __result, IntVec3 c, Map map, Thing thing)
         {
             //returning false means storage is considered full
@@ -149,7 +179,19 @@ namespace KanbanStockpile
                 }
             }
 
-            // Send back the results modified by Stack Refill Threshold
+            // TODO: add duplicate stacks limit
+            int dupStackLimit = 1;
+            if (dupStackLimit > 0)
+            {
+                //Log.Message("Check if more stacks are allowed.")
+                if (!NewStackAllowed(slotGroup, c, map, thing))
+                {
+                    __result = false;
+                    return;
+                }
+            }
+
+            // Send back the results modified by KanbanStockpile StackRefillThreshold
             __result &= !map.thingGrid.ThingsListAt(c).Any(t => t.def.EverStorable(false) && t.stackCount >= thing.def.stackLimit * (srt / 100f));
         }
     }
