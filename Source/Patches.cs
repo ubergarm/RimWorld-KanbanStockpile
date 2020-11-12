@@ -114,20 +114,42 @@ namespace KanbanStockpile
             int numDuplicates = 0;
             foreach (IntVec3 cell in slotGroup.CellsList)
             {
-                if (cell != c)
-                {
-                    Thing thing2 = map.thingGrid.ThingAt(cell, t.def);
-                    if (thing2 != null)
+                // TODO: print out this list of ivec3's to figure out what its scannin'
+                Log.Message("[KanbanStockpile] slotGroup.CellsList cell: = " + cell);
+                //if (cell != c)
+                //{
+                    // TODO FIXME HACK: Maybe gotta iterate over all things at cell not just 2 w/ deep storage
+                    //Thing checkThings = map.thingGrid.ThingAt(cell, t.def);
+                    List<Thing> checkThings = map.thingGrid.ThingsListAt(cell);
+                    foreach (Thing tmpth in checkThings)
                     {
-                        if (thing2.CanStackWith(t) ||
-                           (t.def.stackLimit == 1 && t.def.defName == thing2.def.defName))
+                        //if (tmpth != null)
+                        // check categories: if (list[i].def.category == cat)
+                        Log.Message("[KanbanStockpile] thing t: " + t + "and tmpth " + tmpth);
+                        if (tmpth.CanStackWith(t) ||
+                           (t.def.stackLimit == 1 && t.def.defName == tmpth.def.defName))
                         {
                             numDuplicates++;
                             if (numDuplicates == dupStackLimit)
+                                Log.Message("[KanbanStockpile] DEEP DUPE FOUND thing: " + t + "and thing2: " + tmpth);
                                 return false;
                         }
                     }
-                }
+
+                    //
+                    //
+                    //Thing thing2 = map.thingGrid.ThingAt(cell, t.def);
+                    //if (thing2 != null)
+                    //{
+                    //    if (thing2.CanStackWith(t) ||
+                    //       (t.def.stackLimit == 1 && t.def.defName == thing2.def.defName))
+                    //    {
+                    //        numDuplicates++;
+                    //        if (numDuplicates == dupStackLimit)
+                    //            return false;
+                    //    }
+                    //}
+                //}
             }
             return true;
         }
@@ -156,6 +178,8 @@ namespace KanbanStockpile
                 {
                     foreach (IHoldMultipleThings.IHoldMultipleThings comp in twc.AllComps.OfType<IHoldMultipleThings.IHoldMultipleThings>())
                     {
+                        // how many *more* of a thing that can fit into this cell of deep storage
+                        // (how much capacity is still available)
                         int capacity = 0;
 
                         //bool CapacityAt(Thing thing, IntVec3 storeCell, Map map, out int capacity);
@@ -166,14 +190,23 @@ namespace KanbanStockpile
                         // only haul if count is below threshold
                         //   which is equivalent to availability being above threshold:
                         //            Log.Message("capacity = " + capacity);
+                        Log.Message("[KanbanStockpile] Deep Storage Capacity = " + capacity);
                         //            Log.Message("thing.def.stackLimit = " +thing.def.stackLimit);
                         float fill = (100f * (float)capacity / thing.def.stackLimit);
 
                         //100 - num is necessary because capacity gives empty space not full space
                         __result = fill > (100 - srt);
+                        if (__result == false) return;
                         //      if (__result == false){
                         //          Log.Message("ITS TOO FULL stop yey");
                         //      }
+
+                        // TODO: add duplicate stack limit for deep storage
+                        if (!NewStackAllowed(slotGroup, c, map, thing))
+                        {
+                            __result = false;
+                        }
+
                         return;
                     }
                 }
