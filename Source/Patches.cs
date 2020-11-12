@@ -103,74 +103,26 @@ namespace KanbanStockpile
     [HarmonyPatch(typeof(StoreUtility), "NoStorageBlockersIn")]
     public class StoreUtility_NoStorageBlockersIn_Patch
     {
-
-        // TODO: add duplicate stacks limit
-        public static bool NewStackAllowed(SlotGroup slotGroup, IntVec3 c, Map map, Thing t)
-        {
-            // Log.Message("Checking for duplicates");
-            //int dupStackLimit = StorageLimits.GetLimitSettings(slotGroup.Settings).dupStackLimit;
-            // FIXME TESTING
-            int dupStackLimit = 1;
-            int numDuplicates = 0;
-            foreach (IntVec3 cell in slotGroup.CellsList)
-            {
-                // TODO: print out this list of ivec3's to figure out what its scannin'
-                Log.Message("[KanbanStockpile] slotGroup.CellsList cell: = " + cell);
-                //if (cell != c)
-                //{
-                    // TODO FIXME HACK: Maybe gotta iterate over all things at cell not just 2 w/ deep storage
-                    //Thing checkThings = map.thingGrid.ThingAt(cell, t.def);
-                    List<Thing> checkThings = map.thingGrid.ThingsListAt(cell);
-                    foreach (Thing tmpth in checkThings)
-                    {
-                        //if (tmpth != null)
-                        // check categories: if (list[i].def.category == cat)
-                        Log.Message("[KanbanStockpile] thing t: " + t + "and tmpth " + tmpth);
-                        if (tmpth.CanStackWith(t) ||
-                           (t.def.stackLimit == 1 && t.def.defName == tmpth.def.defName))
-                        {
-                            numDuplicates++;
-                            if (numDuplicates == dupStackLimit)
-                                Log.Message("[KanbanStockpile] DEEP DUPE FOUND thing: " + t + "and thing2: " + tmpth);
-                                return false;
-                        }
-                    }
-
-                    //
-                    //
-                    //Thing thing2 = map.thingGrid.ThingAt(cell, t.def);
-                    //if (thing2 != null)
-                    //{
-                    //    if (thing2.CanStackWith(t) ||
-                    //       (t.def.stackLimit == 1 && t.def.defName == thing2.def.defName))
-                    //    {
-                    //        numDuplicates++;
-                    //        if (numDuplicates == dupStackLimit)
-                    //            return false;
-                    //    }
-                    //}
-                //}
-            }
-            return true;
-        }
-
-
         public static void Postfix(ref bool __result, IntVec3 c, Map map, Thing thing)
         {
-            //returning false means storage is considered full
-            //returning true means storage still has space available
+            //returning false means storage cell at c is considered full regarding thing
+            //returning true means storage still c has space available for thing
 
-            //its already full
+            //its already up - no need to check anything
             if (__result == false) return;
 
+            // FIXME: add duplicate stacks limit
+            int dupStackLimit = 1;
             int srt = 100;
             SlotGroup slotGroup=c.GetSlotGroup(map);
             if( (slotGroup != null) && (slotGroup.Settings != null) )
             {
                 srt = State.Get(slotGroup.Settings.owner.ToString());
             }
+            // TODO: only check if srt < 100 or dupStackLimit > 0
 
             // This code mostly from https://github.com/hooap/SatisfiedStorage
+            // Credits: hoop and others before
             // Handle LWM Deep Storage components which use Mehni's PickUpAndHaul IHoldMultipleThings
             if (KanbanStockpileLoader.IsLWMDeepStorageLoaded)
             {
@@ -189,22 +141,21 @@ namespace KanbanStockpile
                         // if (capacity > thing.def.stackLimit) return true;
                         // only haul if count is below threshold
                         //   which is equivalent to availability being above threshold:
-                        //            Log.Message("capacity = " + capacity);
-                        Log.Message("[KanbanStockpile] Deep Storage Capacity = " + capacity);
-                        //            Log.Message("thing.def.stackLimit = " +thing.def.stackLimit);
+                        //Log.Message("[KanbanStockpile] Deep Storage Capacity = " + capacity);
                         float fill = (100f * (float)capacity / thing.def.stackLimit);
-
                         //100 - num is necessary because capacity gives empty space not full space
                         __result = fill > (100 - srt);
                         if (__result == false) return;
-                        //      if (__result == false){
-                        //          Log.Message("ITS TOO FULL stop yey");
-                        //      }
 
-                        // TODO: add duplicate stack limit for deep storage
-                        if (!NewStackAllowed(slotGroup, c, map, thing))
+                        //bool StackableAt(Thing thing, IntVec3 storeCell, Map map);
+                        if ( (dupStackLimit > 0) &&
+                             (comp.StackableAt(thing, c, map)) )
                         {
-                            __result = false;
+                            if (!NewStackAllowed(slotGroup, c, map, thing))
+                            {
+                                __result = false;
+                                return;
+                            }
                         }
 
                         return;
@@ -212,11 +163,8 @@ namespace KanbanStockpile
                 }
             }
 
-            // TODO: add duplicate stacks limit
-            int dupStackLimit = 1;
             if (dupStackLimit > 0)
             {
-                //Log.Message("Check if more stacks are allowed.")
                 if (!NewStackAllowed(slotGroup, c, map, thing))
                 {
                     __result = false;
@@ -227,6 +175,39 @@ namespace KanbanStockpile
             // Send back the results modified by KanbanStockpile StackRefillThreshold
             __result &= !map.thingGrid.ThingsListAt(c).Any(t => t.def.EverStorable(false) && t.stackCount >= thing.def.stackLimit * (srt / 100f));
         }
+
+        // This code largely taken then updated to work with deep storage from
+        // [Variety Matters Stockpile](https://steamcommunity.com/sharedfiles/filedetails/?id=2266068546)
+        // credits: Cozar and others before
+        public static bool NewStackAllowed(SlotGroup slotGroup, IntVec3 c, Map map, Thing thing)
+        {
+            //int dupStackLimit = StorageLimits.GetLimitSettings(slotGroup.Settings).dupStackLimit;
+            // FIXME TESTING
+            int dupStackLimit = 1;
+            int numDuplicates = 0;
+            foreach (IntVec3 cell in slotGroup.CellsList)
+            {
+                Log.Message("[KanbanStockpile] slotGroup.CellsList cell: = " + cell);
+                List<Thing> checkThings = map.thingGrid.ThingsListAt(cell);
+                foreach (Thing otherThing in checkThings)
+                {
+                    Log.Message("[KanbanStockpile] thing: " + thing + "and already stored otherThing " + otherThing);
+                    Log.Message("[KanbanStockpile] otherThing.stackCount = " + otherThing.stackCount + " and otherThing.def.stackLimit = " + otherThing.def.stackLimit);
+                    if ( (otherThing.CanStackWith(thing) && (otherThing.stackCount == otherThing.def.stackLimit)) ||
+                         (thing.def.stackLimit == 1 && thing.def.defName == otherThing.def.defName) )
+                    {
+                        numDuplicates++;
+                        if (numDuplicates == dupStackLimit)
+                            Log.Message("[KanbanStockpile] DEEP DUPE FOUND thing: " + thing + "and already stored otherThing: " + otherThing);
+                        return false;
+                    }
+                }
+            }
+            return true;
+        }
+
+
+
     }
 
 
