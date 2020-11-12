@@ -118,42 +118,33 @@ namespace KanbanStockpile
                 srt = State.Get(slotGroup.Settings.owner.ToString());
             }
 
+            // This code mostly from https://github.com/hooap/SatisfiedStorage
             // Handle LWM Deep Storage components which use Mehni's PickUpAndHaul IHoldMultipleThings
             if (KanbanStockpileLoader.IsLWMDeepStorageLoaded)
             {
-                foreach(Thing thisthing in map.thingGrid.ThingsListAt(c))
+                foreach(ThingWithComps twc in map.thingGrid.ThingsListAt(c).OfType<ThingWithComps>())
                 {
-                    ThingWithComps th = thisthing as ThingWithComps;
-                    if (th == null) continue;
-                    var allComps = th.AllComps;
-
-                    if (allComps != null)
+                    foreach (IHoldMultipleThings.IHoldMultipleThings comp in twc.AllComps.OfType<IHoldMultipleThings.IHoldMultipleThings>())
                     {
-                        foreach (var comp in allComps)
-                        {
-                            if (comp is IHoldMultipleThings.IHoldMultipleThings)
-                            {
-                                int capacity = 0;
-                                IHoldMultipleThings.IHoldMultipleThings thiscomp = (IHoldMultipleThings.IHoldMultipleThings)comp;
+                        int capacity = 0;
 
-                                thiscomp.CapacityAt(thing, c, map, out capacity);
-                                // if total capacity is larger than the stackLimit (full stack available)
-                                //    Allow hauling (other choices are valid)
-                                // if (capacity > thing.def.stackLimit) return true;
-                                // only haul if count is below threshold
-                                //   which is equivalent to availability being above threshold:
-                                //            Log.Message("capacity = " + capacity);
-                                //            Log.Message("thing.def.stackLimit = " +thing.def.stackLimit);
-                                float var = (100f * (float)capacity / thing.def.stackLimit);
+                        //bool CapacityAt(Thing thing, IntVec3 storeCell, Map map, out int capacity);
+                        comp.CapacityAt(thing, c, map, out capacity);
+                        // if total capacity is larger than the stackLimit (full stack available)
+                        //    Allow hauling (other choices are valid)
+                        // if (capacity > thing.def.stackLimit) return true;
+                        // only haul if count is below threshold
+                        //   which is equivalent to availability being above threshold:
+                        //            Log.Message("capacity = " + capacity);
+                        //            Log.Message("thing.def.stackLimit = " +thing.def.stackLimit);
+                        float fill = (100f * (float)capacity / thing.def.stackLimit);
 
-                                //100 - num is necessary because capacity gives empty space not full space
-                                __result = var > (100 - srt);
-                                //      if (__result == false){
-                                //          Log.Message("ITS TOO FULL stop yey");
-                                //      }
-                                return;
-                            }
-                        }
+                        //100 - num is necessary because capacity gives empty space not full space
+                        __result = fill > (100 - srt);
+                        //      if (__result == false){
+                        //          Log.Message("ITS TOO FULL stop yey");
+                        //      }
+                        return;
                     }
                 }
             }
