@@ -22,8 +22,8 @@ namespace KanbanStockpile
 	[HarmonyPatch(typeof(ITab_Storage), "TopAreaHeight", MethodType.Getter)]
 	static class ITab_Storage_TopAreaHeight_Patch
 	{
-		public const float extraHeight = 24f;
 		//private float TopAreaHeight
+		public const float extraHeight = 28f;
 		public static void Postfix(ref float __result)
 		{
 			__result += extraHeight;
@@ -80,7 +80,6 @@ namespace KanbanStockpile
 			float buttonMargin = ITab_Storage_TopAreaHeight_Patch.extraHeight + 4;
 			Rect rect = new Rect(0f, (float)GetTopAreaHeight.Invoke(tab, new object[] { }) - ITab_Storage_TopAreaHeight_Patch.extraHeight - 2, 280, ITab_Storage_TopAreaHeight_Patch.extraHeight);
 
-            //Stack Refill Threshold Slider
             rect.x += buttonMargin;
             rect.width -= buttonMargin * 3;
             Text.Font = GameFont.Small;
@@ -90,17 +89,24 @@ namespace KanbanStockpile
             tmp.srt = ks.srt;
             tmp.ssl = ks.ssl;
 
-            string sliderLabel = "KS.StackRefillThreshold".Translate(ks.srt);
-            string inputLabel  = "KS.SimilarStackLimit".Translate(ks.ssl);
+            string stackRefillThresholdLabel = "KS.StackRefillThreshold".Translate(ks.srt);
 
-            tmp.srt = (int)Widgets.HorizontalSlider(new Rect(0f, rect.yMin, rect.width, 20f),
-                                                    ks.srt, 0f, 100f, false, sliderLabel, null, null, 1f);
+            string similarStackLimitLabel;
+            if (ks.ssl > 0) {
+                similarStackLimitLabel  = "KS.SimilarStackLimit".Translate(ks.ssl);
+            } else {
+                similarStackLimitLabel  = "KS.SimilarStackLimitOff".Translate();
+            }
 
-            //Similar Stack Limit Input
-            string sslString = ks.ssl.ToString();
-            Widgets.TextFieldNumericLabeled<int>(new Rect(rect.xMin + (rect.width / 2) + 50f, rect.yMin - 10f, rect.width / 2 - 10f, 20f),
-                                                 inputLabel, ref tmp.ssl, ref sslString, 0, 15);
+            //Stack Refill Threshold Slider
+            tmp.srt = (int)Widgets.HorizontalSlider(new Rect(0f, rect.yMin + 10f, 150f, 15f),
+                                                    ks.srt, 0f, 100f, false, stackRefillThresholdLabel, null, null, 1f);
 
+            //Similar Stack Limit Slider
+            tmp.ssl = (int)Widgets.HorizontalSlider(new Rect(155, rect.yMin + 10f, 125f, 15f),
+                                                    ks.ssl, 0f, 8f, false, similarStackLimitLabel, null, null, 1f);
+
+            // TODO: only allow update every 100ms or something to prevent slider spam lag
             if( (ks.srt != tmp.srt) ||
                 (ks.ssl != tmp.ssl) ) {
                 Log.Message("[KanbanStockpile] Changed Stack Refill Threshold for settings with haulDestination named: " + settings.owner.ToString());
