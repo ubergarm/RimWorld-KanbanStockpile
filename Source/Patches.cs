@@ -159,7 +159,7 @@ namespace KanbanStockpile
             bool isDeepStorage = ( (slotGroup?.parent is ThingWithComps) &&
                                    (((ThingWithComps)slotGroup.parent).AllComps.OfType<IHoldMultipleThings.IHoldMultipleThings>() != null) );
 
-            // StackRefillThreshold Check only here at cell c
+            // StackRefillThreshold checks only here at cell c
             List<Thing> things = map.thingGrid.ThingsListAt(c);
             int numDuplicates = 0;
 
@@ -167,29 +167,25 @@ namespace KanbanStockpile
             for (int i = 0; i < things.Count; i++) {
                 Thing t = things[i];
                 if (!t.def.EverStorable(false)) continue; // skip non-storable things as they aren't actually *in* the stockpile
-                if (!t.CanStackWith(thing)) continue; // don't count it if it cannot stack
+                if (!t.CanStackWith(thing)) continue; // skip it if it cannot stack with thing to haul
+                if (t.stackCount > (t.def.stackLimit * ks.srt / 100f)) continue; // no need to refill until count is below threshold
 
-                // TODO: can clean up these two if statements to possibly cut out a couple extra comparisons
-                // its okay to refill a partial stack below stack refill threshold if it is int this exact cell in question
-                if ( (isDeepStorage) &&
-                        (t.stackCount <= (t.def.stackLimit * ks.srt / 100f)) &&
-                        (((t.stackCount + thing.stackCount) <= t.def.stackLimit)) ) {
-                    // pawns seem to try to haul a full stack no matter what for deep storage unlike vanilla stockpiles
-                    KSLog.Message("[KanbanStockpile] YES HAUL EXISTING PARTIAL STACK OF THING TO DEEP STORAGE!");
-                    __result = true;
-                    return;
-                }
-                if ( (!isDeepStorage) &&
-                        (t.stackCount <= (t.def.stackLimit * ks.srt / 100f)) ) {
+                if (!isDeepStorage) {
                     // pawns are smart enough to grab a partial stack for vanilla stockpile so no need to explicitly check here
                     KSLog.Message("[KanbanStockpile] YES HAUL PARTIAL STACK OF THING TO TOPOFF STACK IN STOCKPILE!");
+                    __result = true;
+                    return;
+                } else if (((t.stackCount + thing.stackCount) <= t.def.stackLimit)) {
+                    // pawns seem to try to haul a full stack no matter what for deep storage unlike vanilla stockpiles
+                    // so for here when trying to haul to deep storage explicitly ensure stack to haul is partial stack
+                    KSLog.Message("[KanbanStockpile] YES HAUL EXISTING PARTIAL STACK OF THING TO DEEP STORAGE!");
                     __result = true;
                     return;
                 }
             }
 
-            // SimilarStackLimit Check all cells in the slotgroup (potentially CPU intensive for big zones/limits)
             if (ks.ssl == 0) return;
+            // SimilarStackLimit check all cells in the slotgroup (potentially CPU intensive for big zones/limits)
             for (int j = 0; j < slotGroup.CellsList.Count; j++) {
                 IntVec3 cell = slotGroup.CellsList[j];
                 things = map.thingGrid.ThingsListAt(cell);
