@@ -106,7 +106,6 @@ namespace KanbanStockpile
         public static void Postfix(ref bool __result, IntVec3 c, Map map, Thing thing)
         {
             // NOTE: Likely LWM Deep Storages Prefix() and Vanilla NoStorageBlockersIn() itself have already run
-
             //returning false means storage is "full" so do *not* try to haul the thing
             //returning true means storage still has space available for thing so try to haul it
 
@@ -117,30 +116,27 @@ namespace KanbanStockpile
             SlotGroup slotGroup=c.GetSlotGroup(map);
             if( (slotGroup == null) || (slotGroup.Settings == null) ) return;
 
-            // FIXME: add duplicate stacks limit
-            int dupStackLimit = 1;
+            // FIXME: Assign user specified values from widgets here
+            int dupStackLimit = 2;
             int srt = 100;
             //int dupStackLimit = StorageLimits.GetLimitSettings(slotGroup.Settings).dupStackLimit;
             srt = State.Get(slotGroup.Settings.owner.ToString());
             // TODO: only check if srt < 100 or dupStackLimit > 0
 
-            // where is the stockpile cell in question
             //Log.Message("[KanbanStockpile] cell coordinates: " + c);
-            // info about some thing in the world that could be possibly hauled here
 
-            //bool isDeepStorage = ((slotGroup?.parent is ThingWithComps) && ((ThingWithComps)slotGroup.parent).TryGetComp<IHoldMultipleThings.IHoldMultipleThings>() != null);
+            // is there a better way to detect if a thing in this cell is a "deep storage" type?
+            // maybe doing some fancy reflection or some runtime thing to reach into that mod? lol
+            // not a big deal to depend on that IHoldMultipleThings.dll but there is a re-upload of
+            // Pick Up And Haul which has some code changes, dunno about this specific lib though...
             bool isDeepStorage = ( (slotGroup?.parent is ThingWithComps) &&
                                    (((ThingWithComps)slotGroup.parent).AllComps.OfType<IHoldMultipleThings.IHoldMultipleThings>() != null) );
-            //foreach (IHoldMultipleThings.IHoldMultipleThings comp in twc.AllComps.OfType<IHoldMultipleThings.IHoldMultipleThings>())
-            //    if ( (slotGroup?.parent is ThingWithComps) && ((ThingWithComps)slotGroup.parent).TryGetComp<CompDeepStorage>() != null) {
-            //        isDeepStorage = true;
-            //    }
 
-            Log.Message("[KanbanStockpile] ======= Can We Haul This Thing? ======");
-            Log.Message("[KanbanStockpile] thing: " + thing + "thing.def.defName: " + thing.def.defName);
-            Log.Message("[KanbanStockpile] thing.stackCount = " + thing.stackCount + " and thing.def.stackLimit = " + thing.def.stackLimit);
-            Log.Message("[KanbanStockpile] Here are all similar things already in stockpile: " + slotGroup.Settings.owner);
-            Log.Message("[KanbanStockpile] Is this a deep storage? " + isDeepStorage);
+            //Log.Message("[KanbanStockpile] ======= Can We Haul This Thing? ======");
+            //Log.Message("[KanbanStockpile] thing: " + thing + "thing.def.defName: " + thing.def.defName);
+            //Log.Message("[KanbanStockpile] thing.stackCount = " + thing.stackCount + " and thing.def.stackLimit = " + thing.def.stackLimit);
+            //Log.Message("[KanbanStockpile] Here are all similar things already in stockpile: " + slotGroup.Settings.owner);
+            //Log.Message("[KanbanStockpile] Is this a deep storage? " + isDeepStorage);
             int numDuplicates = 0;
             foreach (IntVec3 cell in slotGroup.CellsList)
             {
@@ -176,107 +172,8 @@ namespace KanbanStockpile
                     }
                 }
             }
-
-            // some code from lwm deep storage to check if c is a deep storage comp
-            //if (slotGroup == null || !(slotGroup?.parent is ThingWithComps) ||
-            //    ((ThingWithComps)slotGroup.parent).TryGetComp<CompDeepStorage>() == null) {
-            //    Utils.Warn(TryPlaceDirect, "  (placed "+__state+" NOT in Deep Storage: with result " + __result + ")");
-            //    return;
-            //}
-
-            //map.thingGrid.ThingsListAt(c).Any(t => t.def.EverStorable(false) && t.stackCount >= thing.def.stackLimit * (srt / 100f));
-            // HACK stop here for now, just learning
             return;
-
-            // This code mostly from https://github.com/hooap/SatisfiedStorage
-            // Credits: hoop and others before
-            // Handle LWM Deep Storage components which use Mehni's PickUpAndHaul IHoldMultipleThings
-            if (KanbanStockpileLoader.IsLWMDeepStorageLoaded)
-            {
-                foreach(ThingWithComps twc in map.thingGrid.ThingsListAt(c).OfType<ThingWithComps>())
-                {
-                    foreach (IHoldMultipleThings.IHoldMultipleThings comp in twc.AllComps.OfType<IHoldMultipleThings.IHoldMultipleThings>())
-                    {
-                        // how many *more* of a thing that can fit into this cell of deep storage
-                        // (how much capacity is still available)
-                        int capacity = 0;
-
-                        //bool CapacityAt(Thing thing, IntVec3 storeCell, Map map, out int capacity);
-                        comp.CapacityAt(thing, c, map, out capacity);
-                        // if total capacity is larger than the stackLimit (full stack available)
-                        //    Allow hauling (other choices are valid)
-                        // if (capacity > thing.def.stackLimit) return true;
-                        // only haul if count is below threshold
-                        //   which is equivalent to availability being above threshold:
-                        //Log.Message("[KanbanStockpile] Deep Storage Capacity = " + capacity);
-                        float fill = (100f * (float)capacity / thing.def.stackLimit);
-                        //100 - num is necessary because capacity gives empty space not full space
-                        __result = fill > (100 - srt);
-                        if (__result == false) return;
-
-                        //bool StackableAt(Thing thing, IntVec3 storeCell, Map map);
-                        if ( (dupStackLimit > 0) &&
-                             (comp.StackableAt(thing, c, map)) )
-                        {
-                            if (!NewStackAllowed(slotGroup, c, map, thing))
-                            {
-                                __result = false;
-                                return;
-                            }
-                        }
-
-                        return;
-                    }
-                }
-            }
-
-            if (dupStackLimit > 0)
-            {
-                if (!NewStackAllowed(slotGroup, c, map, thing))
-                {
-                    __result = false;
-                    return;
-                }
-            }
-
-            // Send back the results modified by KanbanStockpile StackRefillThreshold
-            //__result &= !map.thingGrid.ThingsListAt(c).Any(t => t.def.EverStorable(false) && t.stackCount >= thing.def.stackLimit * (srt / 100f));
-            // ditch duplicate limit for new concept maxDesiredStacks = "max # of desired stacks of a type of thing in entire stockpile"
-            __result &= !map.thingGrid.ThingsListAt(c).Any(t => t.def.EverStorable(false) && t.stackCount >= thing.def.stackLimit * (srt / 100f));
         }
-
-        // This code largely taken then updated to work with deep storage from
-        // [Variety Matters Stockpile](https://steamcommunity.com/sharedfiles/filedetails/?id=2266068546)
-        // credits: Cozar and others before
-        public static bool NewStackAllowed(SlotGroup slotGroup, IntVec3 c, Map map, Thing thing)
-        {
-            //int dupStackLimit = StorageLimits.GetLimitSettings(slotGroup.Settings).dupStackLimit;
-            // FIXME TESTING
-            int dupStackLimit = 1;
-            int numDuplicates = 0;
-            foreach (IntVec3 cell in slotGroup.CellsList)
-            {
-                Log.Message("[KanbanStockpile] slotGroup.CellsList cell: = " + cell);
-                List<Thing> checkThings = map.thingGrid.ThingsListAt(cell);
-                foreach (Thing otherThing in checkThings)
-                {
-                    Log.Message("[KanbanStockpile] thing: " + thing + "and already stored otherThing " + otherThing);
-                    Log.Message("[KanbanStockpile] otherThing.stackCount = " + otherThing.stackCount + " and otherThing.def.stackLimit = " + otherThing.def.stackLimit);
-                    if ( (otherThing.CanStackWith(thing) && (otherThing.stackCount == otherThing.def.stackLimit)) ||
-                         (thing.def.stackLimit == 1 && thing.def.defName == otherThing.def.defName) )
-                    {
-                        numDuplicates++;
-                        if (numDuplicates == dupStackLimit)
-                            Log.Message("[KanbanStockpile] DEEP DUPE FOUND thing: " + thing + "and already stored otherThing: " + otherThing);
-                        return false;
-                    }
-                }
-            }
-            return true;
-        }
-
-
-
     }
 
 
