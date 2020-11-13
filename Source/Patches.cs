@@ -168,35 +168,45 @@ namespace KanbanStockpile
             //    - use for loops instead of foreach for speed (like in vanilla function call)
             //    - can probably break out the refill stuff and put it before as no need to iterate over entire slotgroup for that
             //    - selectively skip code based on stockpile config
+
+
+
             int numDuplicates = 0;
+
+            // StackRefillThreshold Check only here at cell c
+            List<Thing> things = map.thingGrid.ThingsListAt(c);
+            foreach (Thing t in things) {
+                if (!t.def.EverStorable(false)) continue; // skip non-storable things as they aren't actually *in* the stockpile
+                if (!t.CanStackWith(thing)) continue; // don't count it if it cannot stack
+
+                // its okay to refill a partial stack below stack refill threshold if it is int this exact cell in question
+                if ( (isDeepStorage) &&
+                        (t.stackCount <= (t.def.stackLimit * ks.srt / 100f)) &&
+                        (((t.stackCount + thing.stackCount) <= t.def.stackLimit)) ) {
+                    // pawns seem to try to haul a full stack no matter what for deep storage unlike vanilla stockpiles
+                    KSLog.Message("[KanbanStockpile] YES HAUL EXISTING PARTIAL STACK OF THING TO DEEP STORAGE!");
+                    __result = true;
+                    return;
+                }
+                if ( (!isDeepStorage) &&
+                        (t.stackCount <= (t.def.stackLimit * ks.srt / 100f)) ) {
+                    // pawns are smart enough to grab a partial stack for vanilla stockpile so no need to explicitly check here
+                    KSLog.Message("[KanbanStockpile] YES HAUL PARTIAL STACK OF THING TO TOPOFF STACK IN STOCKPILE!");
+                    __result = true;
+                    return;
+                }
+                // TODO: possible optimization by incrementing numDuplicates here and skipping cell `c` in next check
+            }
+
+            // SimilarStackLimit Check all cells in the slotgroup (potentially CPU intensive for big zones/limits)
+            if (ks.ssl == 0) return;
             foreach (IntVec3 cell in slotGroup.CellsList)
             {
-                //IEnumerable<Thing> things = map.thingGrid.ThingsListAt(cell).Where(t => t.def.EverStorable(false));
-                List<Thing> things = map.thingGrid.ThingsListAt(cell);
+                //List<Thing> things = map.thingGrid.ThingsListAt(cell);
+                things = map.thingGrid.ThingsListAt(cell);
                 foreach (Thing t in things) {
                     if (!t.def.EverStorable(false)) continue; // skip non-storable things as they aren't actually *in* the stockpile
                    	if (!t.CanStackWith(thing)) continue; // don't count it if it cannot stack
-
-                    // its okay to refill a partial stack below stack refill threshold if it is int this exact cell in question
-					if ( (isDeepStorage) &&
-                         (cell == c) &&
-                         (t.stackCount <= (t.def.stackLimit * ks.srt / 100f)) &&
-                         (((t.stackCount + thing.stackCount) <= t.def.stackLimit)) ) {
-                        // pawns would carry too much to deep storage unlike vanilla stockpiles
-                        KSLog.Message("[KanbanStockpile] YES HAUL EXISTING PARTIAL STACK OF THING TO DEEP STORAGE!");
-                        __result = true;
-                        return;
-                    }
-					if ( (!isDeepStorage) &&
-                         (cell == c) &&
-                         (t.stackCount <= (t.def.stackLimit * ks.srt / 100f)) ) {
-                        KSLog.Message("[KanbanStockpile] YES HAUL PARTIAL STACK OF THING TO TOPOFF STACK IN STOCKPILE!");
-                        __result = true;
-                        return;
-                    }
-
-                    KSLog.Message("[---------------] thing: " + t + "thing.def.defName: " + t.def.defName);
-                    KSLog.Message("[---------------] thing.stackCount = " + t.stackCount + " thing.def.stackLimit = " + t.def.stackLimit);
 
                     numDuplicates++;
                     if (numDuplicates >= ks.ssl) {
@@ -206,6 +216,8 @@ namespace KanbanStockpile
                     }
                 }
             }
+
+            // if we got here, haul that thing!
             return;
         }
     }
