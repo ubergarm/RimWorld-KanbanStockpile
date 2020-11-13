@@ -118,7 +118,7 @@ namespace KanbanStockpile
                 }
                 lastUpdateTime = curTime;
 
-                Log.Message("[KanbanStockpile] Changed Stack Refill Threshold for settings with haulDestination named: " + settings.owner.ToString());
+                KSLog.Message("[KanbanStockpile] Changed Stack Refill Threshold for settings with haulDestination named: " + settings.owner.ToString());
                 ks.srt = tmp.srt;
                 ks.ssl = tmp.ssl;
                 State.Set(settings.owner.ToString(), ks);
@@ -152,7 +152,7 @@ namespace KanbanStockpile
             //int dupStackLimit = StorageLimits.GetLimitSettings(slotGroup.Settings).dupStackLimit;
             // TODO: only check if srt < 100 or dupStackLimit > 0
 
-            //Log.Message("[KanbanStockpile] cell coordinates: " + c);
+            //KSLog.Message("[KanbanStockpile] cell coordinates: " + c);
 
             // is there a better way to detect if a thing in this cell is a "deep storage" type?
             // maybe doing some fancy reflection or some runtime thing to reach into that mod? lol
@@ -161,11 +161,11 @@ namespace KanbanStockpile
             bool isDeepStorage = ( (slotGroup?.parent is ThingWithComps) &&
                                    (((ThingWithComps)slotGroup.parent).AllComps.OfType<IHoldMultipleThings.IHoldMultipleThings>() != null) );
 
-            //Log.Message("[KanbanStockpile] ======= Can We Haul This Thing? ======");
-            //Log.Message("[KanbanStockpile] thing: " + thing + "thing.def.defName: " + thing.def.defName);
-            //Log.Message("[KanbanStockpile] thing.stackCount = " + thing.stackCount + " and thing.def.stackLimit = " + thing.def.stackLimit);
-            //Log.Message("[KanbanStockpile] Here are all similar things already in stockpile: " + slotGroup.Settings.owner);
-            //Log.Message("[KanbanStockpile] Is this a deep storage? " + isDeepStorage);
+            //KSLog.Message("[KanbanStockpile] ======= Can We Haul This Thing? ======");
+            //KSLog.Message("[KanbanStockpile] thing: " + thing + "thing.def.defName: " + thing.def.defName);
+            //KSLog.Message("[KanbanStockpile] thing.stackCount = " + thing.stackCount + " and thing.def.stackLimit = " + thing.def.stackLimit);
+            //KSLog.Message("[KanbanStockpile] Here are all similar things already in stockpile: " + slotGroup.Settings.owner);
+            //KSLog.Message("[KanbanStockpile] Is this a deep storage? " + isDeepStorage);
             int numDuplicates = 0;
             foreach (IntVec3 cell in slotGroup.CellsList)
             {
@@ -179,23 +179,23 @@ namespace KanbanStockpile
                          (cell == c) &&
                          (t.stackCount < (t.def.stackLimit * ks.srt / 100f)) &&
                          (((t.stackCount + thing.stackCount) <= t.def.stackLimit)) ) {
-                        Log.Message("[KanbanStockpile] YES HAUL EXISTING PARTIAL STACK OF THING TO DEEP STORAGE!");
+                        KSLog.Message("[KanbanStockpile] YES HAUL EXISTING PARTIAL STACK OF THING TO DEEP STORAGE!");
                         __result = true;
                         return;
                     }
 					if ( (!isDeepStorage) &&
                          (cell == c) &&
                          (t.stackCount < (t.def.stackLimit * ks.srt / 100f)) ) {
-                        Log.Message("[KanbanStockpile] YES HAUL PARTIAL STACK OF THING TO TOPOFF STACK IN STOCKPILE!");
+                        KSLog.Message("[KanbanStockpile] YES HAUL PARTIAL STACK OF THING TO TOPOFF STACK IN STOCKPILE!");
                         __result = true;
                         return;
                     }
-                    Log.Message("[---------------] thing: " + t + "thing.def.defName: " + t.def.defName);
-                    Log.Message("[---------------] thing.stackCount = " + t.stackCount + " thing.def.stackLimit = " + t.def.stackLimit);
+                    KSLog.Message("[---------------] thing: " + t + "thing.def.defName: " + t.def.defName);
+                    KSLog.Message("[---------------] thing.stackCount = " + t.stackCount + " thing.def.stackLimit = " + t.def.stackLimit);
 
                     numDuplicates++;
                     if (numDuplicates >= dupStackLimit) {
-                        Log.Message("[KanbanStockpile] NO DON'T HAUL AS THERE IS ALREADY TOO MANY OF THAT KIND OF STACK!");
+                        KSLog.Message("[KanbanStockpile] NO DON'T HAUL AS THERE IS ALREADY TOO MANY OF THAT KIND OF STACK!");
                         __result = false;
                         return;
                     }
@@ -215,7 +215,7 @@ namespace KanbanStockpile
         {
             // The clipboard StorageSettings has no owner, so assume a null is the clipboard...
             string label = __instance?.owner?.ToString() ?? "___clipboard";
-            Log.Message("[KanbanStockpile] ExposeData() with owner name: " + label);
+            KSLog.Message("[KanbanStockpile] ExposeData() with owner name: " + label);
             KanbanSettings ks = State.Get(label);
 
             if (Scribe.mode == LoadSaveMode.Saving)
@@ -240,7 +240,7 @@ namespace KanbanStockpile
 		//public void CopyFrom(StorageSettings other)
         public static void CopyFrom(StorageSettings __instance, StorageSettings other)
         {
-            Log.Message("[KanbanStockpile] CopyFrom()");
+            KSLog.Message("[KanbanStockpile] CopyFrom()");
             string label = other?.owner?.ToString() ?? "___clipboard";
             KanbanSettings ks = State.Get(label);
             label = __instance?.owner?.ToString() ?? "___clipboard";
@@ -273,9 +273,9 @@ namespace KanbanStockpile
     {
         public static void Postfix(Zone_Stockpile __instance)
         {
-            Log.Message("[KanbanStockpile] Zone_Stockpile_PostDeregister_Patch.Postfix()");
+            KSLog.Message("[KanbanStockpile] Zone_Stockpile_PostDeregister_Patch.Postfix()");
             if(State.Exists(__instance.ToString())) {
-                Log.Message("[KanbanStockpile] Removing " + __instance.ToString());
+                KSLog.Message("[KanbanStockpile] Removing " + __instance.ToString());
                 State.Del(__instance.ToString());
             }
         }
@@ -291,8 +291,8 @@ namespace KanbanStockpile
             //private Zone zone;
             string oldName = ___zone?.label ?? "N/A";
 
-            Log.Message("[KanbanStockpile] Dialog_RenameZone.SetName() oldName: " + oldName);
-            Log.Message("[KanbanStockpile] Dialog_RenameZone.SetName() newName: " + name);
+            KSLog.Message("[KanbanStockpile] Dialog_RenameZone.SetName() oldName: " + oldName);
+            KSLog.Message("[KanbanStockpile] Dialog_RenameZone.SetName() newName: " + name);
             if(oldName == "N/A") return;
 
             State.Set(name, State.Get(oldName));

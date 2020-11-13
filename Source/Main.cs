@@ -45,4 +45,15 @@ namespace KanbanStockpile
         {
         }
     }
+
+	public static class KSLog
+    {
+        public static bool verbose = false;
+        public static void Message(string msg)
+        {
+            if (verbose) {
+                Log.Message(msg);
+            }
+        }
+    }
 }
