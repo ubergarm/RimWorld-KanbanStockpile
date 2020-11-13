@@ -17,7 +17,7 @@ namespace KanbanStockpile
     public struct KanbanSettings
     {
         public int srt; // stack refill threshold [0,100]
-        public int ssl; // similar stack limit [0,15] (higher values in big stockpiles will eat CPU)
+        public int ssl; // similar stack limit [0,8] (higher values in big stockpiles will eat CPU)
     }
 
     static class State

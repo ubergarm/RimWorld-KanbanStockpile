@@ -68,6 +68,7 @@ namespace KanbanStockpile
 			}
 		}
 
+        public static DateTime lastUpdateTime = DateTime.Now;
 		public static PropertyInfo SelStoreInfo = AccessTools.Property(typeof(ITab_Storage), "SelStoreSettingsParent");
 		public static void DrawKanbanSettings(ITab_Storage tab)
 		{
@@ -106,9 +107,17 @@ namespace KanbanStockpile
             tmp.ssl = (int)Widgets.HorizontalSlider(new Rect(155, rect.yMin + 10f, 125f, 15f),
                                                     ks.ssl, 0f, 8f, false, similarStackLimitLabel, null, null, 1f);
 
-            // TODO: only allow update every 100ms or something to prevent slider spam lag
+
             if( (ks.srt != tmp.srt) ||
                 (ks.ssl != tmp.ssl) ) {
+
+                // Accept slider changes no faster than 4Hz (250ms) to prevent spamming multiplayer sync lag
+                DateTime curTime = DateTime.Now;
+                if( (curTime - lastUpdateTime).TotalMilliseconds < 250) {
+                    return;
+                }
+                lastUpdateTime = curTime;
+
                 Log.Message("[KanbanStockpile] Changed Stack Refill Threshold for settings with haulDestination named: " + settings.owner.ToString());
                 ks.srt = tmp.srt;
                 ks.ssl = tmp.ssl;
