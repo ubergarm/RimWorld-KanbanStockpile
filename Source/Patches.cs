@@ -85,29 +85,27 @@ namespace KanbanStockpile
             rect.width -= buttonMargin * 3;
             Text.Font = GameFont.Small;
 
-            KanbanSettings ks;
+            KanbanSettings ks, tmp;
             ks = State.Get(settings.owner.ToString());
-            KanbanSettings tmp;
-            tmp.srt = 100;
-            tmp.ssl = 0;
+            tmp.srt = ks.srt;
+            tmp.ssl = ks.ssl;
 
             string sliderLabel = "KS.StackRefillThreshold".Translate(ks.srt);
             string inputLabel  = "KS.SimilarStackLimit".Translate(ks.ssl);
 
-            tmp.srt = (int)Widgets.HorizontalSlider(new Rect(0f, rect.yMin, rect.width, 36f),
+            tmp.srt = (int)Widgets.HorizontalSlider(new Rect(0f, rect.yMin, rect.width, 20f),
                                                     ks.srt, 0f, 100f, false, sliderLabel, null, null, 1f);
 
             //Similar Stack Limit Input
-            //Widgets.CheckboxLabeled(new Rect(rect.xMin, rect.yMin - 24f - 3f - 76f, rect.width / 2 + 58f, 24f), inputLabel, ref hasLimit, false);
-            //Widgets.TextFieldNumeric(new Rect(rect.xMin + (rect.width / 2) + 10f, rect.yMin - 24f, rect.width / 2 - 10f, 24f), ref ks.ssl, ref textBuffer, 0, 15);
-            string nullString = null;
-            Widgets.TextFieldNumeric(new Rect(rect.xMin + (rect.width / 2) + 30f, rect.yMin - 10f, rect.width / 2 - 10f, 24f),
-                                     ref ks.ssl, ref nullString, 0, 15);
+            string sslString = ks.ssl.ToString();
+            Widgets.TextFieldNumericLabeled<int>(new Rect(rect.xMin + (rect.width / 2) + 50f, rect.yMin - 10f, rect.width / 2 - 10f, 20f),
+                                                 inputLabel, ref tmp.ssl, ref sslString, 0, 15);
 
-            if( (tmp.srt != ks.srt) ||
-                (tmp.ssl != ks.ssl) ) {
+            if( (ks.srt != tmp.srt) ||
+                (ks.ssl != tmp.ssl) ) {
                 Log.Message("[KanbanStockpile] Changed Stack Refill Threshold for settings with haulDestination named: " + settings.owner.ToString());
                 ks.srt = tmp.srt;
+                ks.ssl = tmp.ssl;
                 State.Set(settings.owner.ToString(), ks);
             }
 		}
