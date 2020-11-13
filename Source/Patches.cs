@@ -85,14 +85,16 @@ namespace KanbanStockpile
 			rect.width -= buttonMargin * 4;
 			Text.Font = GameFont.Small;
 
-            int srt = State.Get(settings.owner.ToString());
+            State.ExtraConfig ec;
+            ec = State.Get(settings.owner.ToString());
 
-            string label = "LD.StackRefillThreshold".Translate(srt);
+            string sliderLabel = "KS.StackRefillThreshold".Translate(ec.srt);
+            string inputLabel  = "KS.SimilarStackLimit".Translate(ec.ssl);
 
-            int tmp = (int)Widgets.HorizontalSlider(new Rect(0f, rect.yMin, rect.width, buttonMargin), srt, 0f, 100f, false, label, null, null, 1f);
-            if(tmp != srt) {
+            int tmp = (int)Widgets.HorizontalSlider(new Rect(0f, rect.yMin, rect.width, buttonMargin), ec.srt, 0f, 100f, false, sliderLabel, null, null, 1f);
+            if(tmp != ec.srt) {
                 Log.Message("[KanbanStockpile] Changed Stack Refill Threshold for settings with haulDestination named: " + settings.owner.ToString());
-                State.Set(settings.owner.ToString(), tmp);
+                State.Set(settings.owner.ToString(), ec);
             }
 		}
 	}
@@ -117,10 +119,10 @@ namespace KanbanStockpile
             if( (slotGroup == null) || (slotGroup.Settings == null) ) return;
 
             // FIXME: Assign user specified values from widgets here
-            int dupStackLimit = 2;
-            int srt = 100;
+            State.ExtraConfig ec;
+            ec = State.Get(slotGroup.Settings.owner.ToString());
+            int dupStackLimit = ec.ssl;
             //int dupStackLimit = StorageLimits.GetLimitSettings(slotGroup.Settings).dupStackLimit;
-            srt = State.Get(slotGroup.Settings.owner.ToString());
             // TODO: only check if srt < 100 or dupStackLimit > 0
 
             //Log.Message("[KanbanStockpile] cell coordinates: " + c);
@@ -148,7 +150,7 @@ namespace KanbanStockpile
                     // its okay to refill a partial stack below stack refill threshold if it is int this exact cell in question
 					if ( (isDeepStorage) &&
                          (cell == c) &&
-                         (t.stackCount < (t.def.stackLimit * srt / 100f)) &&
+                         (t.stackCount < (t.def.stackLimit * ec.srt / 100f)) &&
                          (((t.stackCount + thing.stackCount) <= t.def.stackLimit)) ) {
                         Log.Message("[KanbanStockpile] YES HAUL EXISTING PARTIAL STACK OF THING TO DEEP STORAGE!");
                         __result = true;
@@ -156,7 +158,7 @@ namespace KanbanStockpile
                     }
 					if ( (!isDeepStorage) &&
                          (cell == c) &&
-                         (t.stackCount < (t.def.stackLimit * srt / 100f)) ) {
+                         (t.stackCount < (t.def.stackLimit * ec.srt / 100f)) ) {
                         Log.Message("[KanbanStockpile] YES HAUL PARTIAL STACK OF THING TO TOPOFF STACK IN STOCKPILE!");
                         __result = true;
                         return;
@@ -187,18 +189,20 @@ namespace KanbanStockpile
             // The clipboard StorageSettings has no owner, so assume a null is the clipboard...
             string label = __instance?.owner?.ToString() ?? "___clipboard";
             Log.Message("[KanbanStockpile] ExposeData() with owner name: " + label);
-            int srt = State.Get(label);
+            State.ExtraConfig ec = State.Get(label);
 
             if (Scribe.mode == LoadSaveMode.Saving)
             {
                 // this mode implicitly takes the value currently in srt and saves it out
-                Scribe_Values.Look(ref srt, "stackRefillThreshold", 100, true);
+                Scribe_Values.Look(ref ec.srt, "stackRefillThreshold", 100, true);
+                Scribe_Values.Look(ref ec.ssl, "similarStackLimit", 0, true);
             }
             else if (Scribe.mode == LoadSaveMode.LoadingVars)
             {
                 // this mode implicitly loads some other value into this instance of srt
-                Scribe_Values.Look(ref srt, "stackRefillThreshold", 100, false);
-                State.Set(label, srt);
+                Scribe_Values.Look(ref ec.srt, "stackRefillThreshold", 100, false);
+                Scribe_Values.Look(ref ec.ssl, "similarStackLimit", 0, false);
+                State.Set(label, ec);
             }
         }
     }
@@ -211,9 +215,9 @@ namespace KanbanStockpile
         {
             Log.Message("[KanbanStockpile] CopyFrom()");
             string label = other?.owner?.ToString() ?? "___clipboard";
-            int srt = State.Get(label);
+            State.ExtraConfig ec = State.Get(label);
             label = __instance?.owner?.ToString() ?? "___clipboard";
-            State.Set(label, srt);
+            State.Set(label, ec);
         }
 
 		public static IEnumerable<CodeInstruction> Transpiler(IEnumerable<CodeInstruction> instructions)

@@ -1,4 +1,5 @@
 <?xml version="1.0" encoding="utf-8" ?>
 <LanguageData>
-    <LD.StackRefillThreshold>Stack Refill Threshold  {0}%</LD.StackRefillThreshold>
+    <KS.StackRefillThreshold>Stack Refill Threshold  {0}%</KS.StackRefillThreshold>
+    <KS.SimilarStackLimit>Similar Stack Limit  {0}</KS.SimilarStackLimit>
 </LanguageData>
