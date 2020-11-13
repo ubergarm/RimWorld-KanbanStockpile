@@ -135,24 +135,21 @@ namespace KanbanStockpile
         public static void Postfix(ref bool __result, IntVec3 c, Map map, Thing thing)
         {
             // NOTE: Likely LWM Deep Storages Prefix() and Vanilla NoStorageBlockersIn() itself have already run
-            //returning false means storage is "full" so do *not* try to haul the thing
-            //returning true means storage still has space available for thing so try to haul it
+            // returning false means storage is "full" so do *not* try to haul the thing
+            // returning true means storage still has space available for thing so try to haul it
 
-            //storage already filled up so no need to try to limit it further
+            // storage already filled up so no need to try to limit it further
             if (__result == false) return;
 
-            //make sure we have everything we need to continue
+            // make sure we have everything we need to continue
             SlotGroup slotGroup=c.GetSlotGroup(map);
             if( (slotGroup == null) || (slotGroup.Settings == null) ) return;
 
-            // FIXME: Assign user specified values from widgets here
             KanbanSettings ks;
             ks = State.Get(slotGroup.Settings.owner.ToString());
-            int dupStackLimit = ks.ssl;
-            //int dupStackLimit = StorageLimits.GetLimitSettings(slotGroup.Settings).dupStackLimit;
-            // TODO: only check if srt < 100 or dupStackLimit > 0
 
-            //KSLog.Message("[KanbanStockpile] cell coordinates: " + c);
+            // skip all this stuff now unless stockpile is configured to use it
+            if (ks.srt == 100 && ks.ssl == 0) return;
 
             // is there a better way to detect if a thing in this cell is a "deep storage" type?
             // maybe doing some fancy reflection or some runtime thing to reach into that mod? lol
@@ -166,6 +163,11 @@ namespace KanbanStockpile
             //KSLog.Message("[KanbanStockpile] thing.stackCount = " + thing.stackCount + " and thing.def.stackLimit = " + thing.def.stackLimit);
             //KSLog.Message("[KanbanStockpile] Here are all similar things already in stockpile: " + slotGroup.Settings.owner);
             //KSLog.Message("[KanbanStockpile] Is this a deep storage? " + isDeepStorage);
+
+            // TODO Refactor and clean this all up
+            //    - use for loops instead of foreach for speed (like in vanilla function call)
+            //    - can probably break out the refill stuff and put it before as no need to iterate over entire slotgroup for that
+            //    - selectively skip code based on stockpile config
             int numDuplicates = 0;
             foreach (IntVec3 cell in slotGroup.CellsList)
             {
@@ -174,27 +176,30 @@ namespace KanbanStockpile
                 foreach (Thing t in things) {
                     if (!t.def.EverStorable(false)) continue; // skip non-storable things as they aren't actually *in* the stockpile
                    	if (!t.CanStackWith(thing)) continue; // don't count it if it cannot stack
+
                     // its okay to refill a partial stack below stack refill threshold if it is int this exact cell in question
 					if ( (isDeepStorage) &&
                          (cell == c) &&
-                         (t.stackCount < (t.def.stackLimit * ks.srt / 100f)) &&
+                         (t.stackCount <= (t.def.stackLimit * ks.srt / 100f)) &&
                          (((t.stackCount + thing.stackCount) <= t.def.stackLimit)) ) {
+                        // pawns would carry too much to deep storage unlike vanilla stockpiles
                         KSLog.Message("[KanbanStockpile] YES HAUL EXISTING PARTIAL STACK OF THING TO DEEP STORAGE!");
                         __result = true;
                         return;
                     }
 					if ( (!isDeepStorage) &&
                          (cell == c) &&
-                         (t.stackCount < (t.def.stackLimit * ks.srt / 100f)) ) {
+                         (t.stackCount <= (t.def.stackLimit * ks.srt / 100f)) ) {
                         KSLog.Message("[KanbanStockpile] YES HAUL PARTIAL STACK OF THING TO TOPOFF STACK IN STOCKPILE!");
                         __result = true;
                         return;
                     }
+
                     KSLog.Message("[---------------] thing: " + t + "thing.def.defName: " + t.def.defName);
                     KSLog.Message("[---------------] thing.stackCount = " + t.stackCount + " thing.def.stackLimit = " + t.def.stackLimit);
 
                     numDuplicates++;
-                    if (numDuplicates >= dupStackLimit) {
+                    if (numDuplicates >= ks.ssl) {
                         KSLog.Message("[KanbanStockpile] NO DON'T HAUL AS THERE IS ALREADY TOO MANY OF THAT KIND OF STACK!");
                         __result = false;
                         return;
