@@ -145,10 +145,11 @@ namespace KanbanStockpile
             SlotGroup slotGroup=c.GetSlotGroup(map);
             if( (slotGroup == null) || (slotGroup.Settings == null) ) return;
 
+            // grab latest configs for this stockpile from our state manager
             KanbanSettings ks;
             ks = State.Get(slotGroup.Settings.owner.ToString());
 
-            // skip all this stuff now unless stockpile is configured to use it
+            // skip all this stuff now if stockpile is not configured to use at least one feature
             if (ks.srt == 100 && ks.ssl == 0) return;
 
             // is there a better way to detect if a thing in this cell is a "deep storage" type?
@@ -158,27 +159,17 @@ namespace KanbanStockpile
             bool isDeepStorage = ( (slotGroup?.parent is ThingWithComps) &&
                                    (((ThingWithComps)slotGroup.parent).AllComps.OfType<IHoldMultipleThings.IHoldMultipleThings>() != null) );
 
-            //KSLog.Message("[KanbanStockpile] ======= Can We Haul This Thing? ======");
-            //KSLog.Message("[KanbanStockpile] thing: " + thing + "thing.def.defName: " + thing.def.defName);
-            //KSLog.Message("[KanbanStockpile] thing.stackCount = " + thing.stackCount + " and thing.def.stackLimit = " + thing.def.stackLimit);
-            //KSLog.Message("[KanbanStockpile] Here are all similar things already in stockpile: " + slotGroup.Settings.owner);
-            //KSLog.Message("[KanbanStockpile] Is this a deep storage? " + isDeepStorage);
-
-            // TODO Refactor and clean this all up
-            //    - use for loops instead of foreach for speed (like in vanilla function call)
-            //    - can probably break out the refill stuff and put it before as no need to iterate over entire slotgroup for that
-            //    - selectively skip code based on stockpile config
-
-
-
-            int numDuplicates = 0;
-
             // StackRefillThreshold Check only here at cell c
             List<Thing> things = map.thingGrid.ThingsListAt(c);
-            foreach (Thing t in things) {
+            int numDuplicates = 0;
+
+            // Design Decision: use for loops instead of foreach as they may be faster and similar to this vanilla function
+            for (int i = 0; i < things.Count; i++) {
+                Thing t = things[i];
                 if (!t.def.EverStorable(false)) continue; // skip non-storable things as they aren't actually *in* the stockpile
                 if (!t.CanStackWith(thing)) continue; // don't count it if it cannot stack
 
+                // TODO: can clean up these two if statements to possibly cut out a couple extra comparisons
                 // its okay to refill a partial stack below stack refill threshold if it is int this exact cell in question
                 if ( (isDeepStorage) &&
                         (t.stackCount <= (t.def.stackLimit * ks.srt / 100f)) &&
@@ -195,19 +186,19 @@ namespace KanbanStockpile
                     __result = true;
                     return;
                 }
-                // TODO: possible optimization by incrementing numDuplicates here and skipping cell `c` in next check
             }
 
             // SimilarStackLimit Check all cells in the slotgroup (potentially CPU intensive for big zones/limits)
             if (ks.ssl == 0) return;
-            foreach (IntVec3 cell in slotGroup.CellsList)
-            {
-                //List<Thing> things = map.thingGrid.ThingsListAt(cell);
+            for (int j = 0; j < slotGroup.CellsList.Count; j++) {
+                IntVec3 cell = slotGroup.CellsList[j];
                 things = map.thingGrid.ThingsListAt(cell);
-                foreach (Thing t in things) {
+                for (int i = 0; i < things.Count; i++) {
+                    Thing t = things[i];
                     if (!t.def.EverStorable(false)) continue; // skip non-storable things as they aren't actually *in* the stockpile
-                   	if (!t.CanStackWith(thing)) continue; // don't count it if it cannot stack
+                    if (!t.CanStackWith(thing)) continue; // don't count it if it cannot stack
 
+                    // even a partial stack is a dupe so count it regardless
                     numDuplicates++;
                     if (numDuplicates >= ks.ssl) {
                         KSLog.Message("[KanbanStockpile] NO DON'T HAUL AS THERE IS ALREADY TOO MANY OF THAT KIND OF STACK!");
@@ -217,7 +208,7 @@ namespace KanbanStockpile
                 }
             }
 
-            // if we got here, haul that thing!
+            // if we get here, haul that thing!
             return;
         }
     }
