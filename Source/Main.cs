@@ -19,7 +19,6 @@ namespace KanbanStockpile
 
         static KanbanStockpileLoader()
         {
-
             var harmony = new Harmony("net.ubergarm.rimworld.mods.kanbanstockpile");
             harmony.PatchAll();
 
@@ -32,7 +31,10 @@ namespace KanbanStockpile
             }
 
             if (MP.enabled) {
-                MP.RegisterAll();
+                //MP.RegisterAll();
+                MP.RegisterSyncMethod(typeof(State), nameof(State.Set));
+                MP.RegisterSyncMethod(typeof(State), nameof(State.Del));
+                MP.RegisterSyncWorker<KanbanSettings>(State.SyncKanbanSettings, typeof(KanbanSettings), false, false);
             }
         }
     }
