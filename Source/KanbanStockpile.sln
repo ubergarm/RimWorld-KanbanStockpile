@@ -1,7 +1,7 @@
 
 Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio 15
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "KanbanStockpile", "Source\KanbanStockpile.csproj", "{7A2AFCE7-5B32-4BBB-8BFC-3B1D0C80215D}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "KanbanStockpile", "KanbanStockpile.csproj", "{7A2AFCE7-5B32-4BBB-8BFC-3B1D0C80215D}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
