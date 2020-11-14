@@ -19,7 +19,6 @@
         <li>LWM.DeepStorage</li>
     </loadAfter>
 	<packageId>ubergarm.kanbanstockpile</packageId>
-	<steamAppId>999999999</steamAppId>
     <url>https://github.com/ubergarm/RimWorld-KanbanStockpile</url>
     <description>RimWorld mod adding `Stack Refill Threshold` and `Similar Stack Limit` to
 stockpiles and deep storage inspired by `Kanban Logistic Control` systems.
