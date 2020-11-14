@@ -80,7 +80,7 @@ If you play Minecraft check out my magic themed sky island modpack
 * [Sky Magic Islands](https://www.curseforge.com/minecraft/modpacks/sky-magic-islands)
 
 ## References
-* [steam workshop rimworld mod KanbanStockpile](TBD)
+* [Steam Workshop KanbanStockpile](https://steamcommunity.com/sharedfiles/filedetails/?id=2287142613)
 * [github.com/ubergarm/RimWorld-KanbanStockpile](https://github.com/ubergarm/RimWorld-KanbanStockpile)
 * [github.com/ubergarm/monodevelop](https://github.com/ubergarm/monodevelop)
 * [Kanban](https://en.wikipedia.org/wiki/Kanban)
