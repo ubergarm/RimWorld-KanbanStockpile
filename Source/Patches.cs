@@ -156,8 +156,12 @@ namespace KanbanStockpile
             // maybe doing some fancy reflection or some runtime thing to reach into that mod? lol
             // not a big deal to depend on that IHoldMultipleThings.dll but there is a re-upload of
             // Pick Up And Haul which has some code changes, dunno about this specific lib though...
-            bool isDeepStorage = ( (slotGroup?.parent is ThingWithComps) &&
-                    (((ThingWithComps)slotGroup.parent).AllComps.OfType<IHoldMultipleThings.IHoldMultipleThings>() != null) );
+            // Note: its not just deep storage, but seems like any a JobDefOf.HaulToContainer behavior?
+            bool isDeepStorage = false;
+            if (KanbanStockpileLoader.IsLWMDeepStorageLoaded) {
+                isDeepStorage = ( (slotGroup?.parent is ThingWithComps) &&
+                                  (((ThingWithComps)slotGroup.parent).AllComps.OfType<IHoldMultipleThings.IHoldMultipleThings>() != null) );
+            }
 
             // StackRefillThreshold checks only here at cell c
             List<Thing> things = map.thingGrid.ThingsListAt(c);
@@ -177,7 +181,7 @@ namespace KanbanStockpile
                     __result = true;
                     return;
                 } else if (((t.stackCount + thing.stackCount) <= t.def.stackLimit)) {
-                    // pawns seem to try to haul a full stack no matter what for deep storage containers unlike vanilla cell stockpiles
+                    // pawns seem to try to haul a full stack no matter what for HaulToContainer unlike HaulToCell CurJobDef's
                     // so for here when trying to haul to deep storage explicitly ensure stack to haul is partial stack
                     // maybe this is a JobDefOf.HaulToContainer job?
                     KSLog.Message("[KanbanStockpile] YES HAUL EXISTING PARTIAL STACK OF THING TO DEEP STORAGE!");
