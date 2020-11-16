@@ -44,10 +44,14 @@ until it has been completely used up.
 * Avoid using high values of `Similar Stack Limit` in large stockpiles as it must scan every thing in every cell
 
 ## Compatible Mods
+* [LWM's Deep Storage](https://steamcommunity.com/sharedfiles/filedetails/?id=1617282896) - Little White Mouse
+* [KV RimFridge](https://steamcommunity.com/sharedfiles/filedetails/?id=1180721235) - Kiame Vivacity / Vendan / et al
+* [Stockpile Ranking](https://steamcommunity.com/sharedfiles/filedetails/?id=1558464886) - Uuugggg aka AlexTD
+* [Simple Search Bar](https://steamcommunity.com/sharedfiles/filedetails/?id=1827546987) - Gguake
+
+*Note*: Place `LWM Deep Storage` above `KanbanStockpile` in mod load order required for `Stack Refill Threshold` feature in deep storage.
+
 Please comment below with results if you test this mod with your own favorite storage mods, thanks!
-* `LWM Deep Storage` above `KanbanStockpile` in mod load order required for `Stack Refill Threshold` in deep storage
-* *(`Similar Stack Limit` works natively with deep storage like stockpiles even without `IHoldMultiplethings` component)*
-* `[KV] RimFridge`
 
 ## Credits
 Original idea and inspiration came from my failed attempt to multiplayer patch Satisfied Storage.
@@ -63,7 +67,7 @@ Deep storage stockpiles implementing the `IHoldMultiplethings` component are a *
 * [KV RimFridge](https://steamcommunity.com/sharedfiles/filedetails/?id=1180721235)
 * [PickupAndHaul](https://steamcommunity.com/sharedfiles/filedetails/?id=1279012058) - Mehni
 
-I got most of the GUI hooks and all the Transpiler stuff from a great and beautiful mod: Stockpile Ranking.
+I got most of the GUI hooks and all the Transpiler stuff from Uuugggg's (AlexTD) Stockpile Ranking.
 * [Stockpile Ranking](https://steamcommunity.com/sharedfiles/filedetails/?id=1558464886) - Uuugggg aka AlexTD
 
 This mod relies heavily on Harmony for ease of patching.

@@ -81,6 +81,12 @@ namespace KanbanStockpile
             float buttonMargin = ITab_Storage_TopAreaHeight_Patch.extraHeight + 4;
             Rect rect = new Rect(0f, (float)GetTopAreaHeight.Invoke(tab, new object[] { }) - ITab_Storage_TopAreaHeight_Patch.extraHeight - 2, 280, ITab_Storage_TopAreaHeight_Patch.extraHeight);
 
+            // if Stockpile Ranking is installed, scootch these widgets up so it doesn't overlap
+            // https://github.com/alextd/RimWorld-StockpileRanking/blob/master/Source/RankSelection.cs#L18
+            if (KanbanStockpileLoader.IsStockpileRankingLoaded) {
+                rect.y -= 26f;
+            }
+
             rect.x += buttonMargin;
             rect.width -= buttonMargin * 3;
             Text.Font = GameFont.Small;

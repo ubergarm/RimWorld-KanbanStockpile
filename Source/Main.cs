@@ -16,6 +16,7 @@ namespace KanbanStockpile
     public static class KanbanStockpileLoader
     {
         public static bool IsLWMDeepStorageLoaded;
+        public static bool IsStockpileRankingLoaded;
 
         static KanbanStockpileLoader()
         {
@@ -29,6 +30,15 @@ namespace KanbanStockpile
                 IsLWMDeepStorageLoaded = false;
                 Log.Message("[KanbanStockpile] Did *NOT* detect LWM Deep Storage...");
             }
+
+            if (ModLister.GetActiveModWithIdentifier("Uuugggg.StockpileRanking") != null) {
+                IsStockpileRankingLoaded = true;
+                Log.Message("[KanbanStockpile] Detected Uuugggg's StockpileRanking is loaded!");
+            } else {
+                IsStockpileRankingLoaded = false;
+                Log.Message("[KanbanStockpile] Did *NOT* detect Uuugggg's StockpileRanking...");
+            }
+
 
             if (MP.enabled) {
                 //MP.RegisterAll();
