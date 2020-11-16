@@ -1,11 +1,11 @@
 Kanban Stockpile
 ===
 RimWorld mod adding `Stack Refill Threshold` and `Similar Stack Limit` to
-stockpiles and deep storage inspired by `Kanban Logistic Control` systems.
+stockpiles and deep storage inspired by kanban logistic control systems.
 
 ## Features
 #### Stack Refill Threshold
-* Just like setting "pause when satisfied" for a bill — but for hauling to stockpile stacks!
+* Just like "pause when satisfied" for a bill—but for hauling to stockpile stacks!
 * Defaults to 100% which gives the same as behavior as vanilla.
 
 *Example*: Set your RimFridge Important dining room stockpile to 20%
@@ -46,7 +46,7 @@ until it has been completely used up.
 ## Compatible Mods
 * [LWM's Deep Storage](https://steamcommunity.com/sharedfiles/filedetails/?id=1617282896) - Little White Mouse
 * [KV RimFridge](https://steamcommunity.com/sharedfiles/filedetails/?id=1180721235) - Kiame Vivacity / Vendan / et al
-* [Stockpile Ranking](https://steamcommunity.com/sharedfiles/filedetails/?id=1558464886) - Uuugggg aka AlexTD
+* [Stockpile Ranking](https://steamcommunity.com/sharedfiles/filedetails/?id=1558464886) - Uuugggg (AlexTD)
 * [Simple Search Bar](https://steamcommunity.com/sharedfiles/filedetails/?id=1827546987) - Gguake
 
 *Note*: Place `LWM Deep Storage` above `KanbanStockpile` in mod load order required for `Stack Refill Threshold` feature in deep storage.
@@ -62,13 +62,11 @@ Original idea and inspiration came from my failed attempt to multiplayer patch S
 Inspiration for the `Similar Stack Limit` feature came directly from the great Variety Matters Stockpile.
 * [VarietyMattersStockpile](https://steamcommunity.com/workshop/filedetails/?id=2266068546) - Cozar
 
-Deep storage stockpiles implementing the `IHoldMultiplethings` component are a *must* in any modpack.
-* [LWM's Deep Storage](https://steamcommunity.com/sharedfiles/filedetails/?id=1617282896) - Little White Mouse
-* [KV RimFridge](https://steamcommunity.com/sharedfiles/filedetails/?id=1180721235)
+IHaulMultipleThings.dll from:
 * [PickupAndHaul](https://steamcommunity.com/sharedfiles/filedetails/?id=1279012058) - Mehni
 
 I got most of the GUI hooks and all the Transpiler stuff from Uuugggg's (AlexTD) Stockpile Ranking.
-* [Stockpile Ranking](https://steamcommunity.com/sharedfiles/filedetails/?id=1558464886) - Uuugggg aka AlexTD
+* [Stockpile Ranking](https://steamcommunity.com/sharedfiles/filedetails/?id=1558464886) - Uuugggg (AlexTD)
 
 This mod relies heavily on Harmony for ease of patching.
 * [Harmony](https://steamcommunity.com/workshop/filedetails/?id=2040656402) - pardeike

@@ -21,43 +21,29 @@
 	<packageId>ubergarm.kanbanstockpile</packageId>
     <steamAppId>2287142613</steamAppId>
     <url>https://github.com/ubergarm/RimWorld-KanbanStockpile</url>
-    <description>RimWorld mod adding `Stack Refill Threshold` and `Similar Stack Limit` to
-stockpiles and deep storage inspired by `Kanban Logistic Control` systems.
+    <description>RimWorld mod adding `Stack Refill Threshold` and `Similar Stack Limit` to stockpiles and deep storage inspired by kanban logistic control systems.
 
 ## Features
 #### Stack Refill Threshold
-* Just like setting "pause when satisfied" for a bill — but for hauling to stockpile stacks!
+* Just like "pause when satisfied" for a bill—but for hauling to stockpile stacks!
 * Defaults to 100% which gives the same as behavior as vanilla.
 
-*Example*: Set your RimFridge Important dining room stockpile to 20%
-and it won't trigger hauling jobs for any specific stack until there
-are less than or equal to 2 meals left in it (meal stack size is 10).
+*Example*: Set your RimFridge Important dining room stockpile to 20% and it won't trigger hauling jobs for any specific stack until there are less than or equal to 2 meals left in it (meal stack size is 10).
 
-*Note*: This feature works in deep storage stockpiles, however colonists
-will only refill partial stacks using an existing partial stack that can
-fit. They aren't smart enough to break up a full stack into one small
-enough to fit perfectly in deep storage.  *(they are smart enough to
-do this for a regular vanilla stockpile however)*
+*Note*: This feature works in deep storage stockpiles, however colonists will only refill partial stacks using an existing partial stack that can fit. They aren't smart enough to break up a full stack into one small enough to fit perfectly in deep storage.  (they are smart enough to do this for a regular non-container cell stockpiles)
 
 #### Similar Stack Limit
 * No more than `Similar Stack Limit` stacks of a thing are allowed in the stockpile.
 * Defaults to `OFF` which gives the same behavior as vanilla.
 
-*Example*: Set your Medicine Cabinent Preferred hospital stockpile to a
-`Similar Stack Limit` of 1 and you will get no more than a single stack
-of any medicine and drug type now instead of clogging it up nothing but
-rotting herbal medicine and smoke leaf joints!
+*Example*: Set your Medicine Cabinent Preferred hospital stockpile to a `Similar Stack Limit` of 1 and you will get no more than a single stack of any medicine and drug type now instead of clogging it up nothing but rotting herbal medicine and smoke leaf joints!
 
 #### First Class Multiplayer Support
 * Data stored using determenistic dictionary keys and all state mutations properly sync'd!
 * All development done in a multiplayer context locally with arbiter to minimize potential desyncs.
 
 ## Full Example
-Setup a raw ingredients food Preferred stockpile in the kitchen next to
-your stove. Set the `Stack Refill Threshold` to 0% and the `Similar Stack
-Limit` to 1. This way you will get a variety of fresh ingredients close
-to the cook and will reduce spoilage because the stack is not refilled
-until it has been completely used up.
+Setup a raw ingredients food Preferred stockpile in the kitchen next to your stove. Set the `Stack Refill Threshold` to 0% and the `Similar Stack Limit` to 1. This way you will get a variety of fresh ingredients close to the cook and will reduce spoilage because the stack is not refilled until it has been completely used up.
 
 ## Performance
 * Uses `for` loops similar to vanilla style code for basic `C#` optimization
@@ -65,10 +51,14 @@ until it has been completely used up.
 * Avoid using high values of `Similar Stack Limit` in large stockpiles as it must scan every thing in every cell
 
 ## Compatible Mods
+* [LWM's Deep Storage](https://steamcommunity.com/sharedfiles/filedetails/?id=1617282896) - Little White Mouse
+* [KV RimFridge](https://steamcommunity.com/sharedfiles/filedetails/?id=1180721235) - Kiame Vivacity / Vendan / et al
+* [Stockpile Ranking](https://steamcommunity.com/sharedfiles/filedetails/?id=1558464886) - Uuugggg (AlexTD)
+* [Simple Search Bar](https://steamcommunity.com/sharedfiles/filedetails/?id=1827546987) - Gguake
+
+*Note*: Place `LWM Deep Storage` above `KanbanStockpile` in mod load order required for `Stack Refill Threshold` feature in deep storage.
+
 Please comment below with results if you test this mod with your own favorite storage mods, thanks!
-* `LWM Deep Storage` above `KanbanStockpile` in mod load order required for `Stack Refill Threshold` in deep storage
-* *(`Similar Stack Limit` works natively with deep storage like stockpiles even without `IHoldMultiplethings` component)*
-* `[KV] RimFridge`
 
 ## Credits
 Original idea and inspiration came from my failed attempt to multiplayer patch Satisfied Storage.
@@ -79,13 +69,11 @@ Original idea and inspiration came from my failed attempt to multiplayer patch S
 Inspiration for the `Similar Stack Limit` feature came directly from the great Variety Matters Stockpile.
 * [VarietyMattersStockpile](https://steamcommunity.com/workshop/filedetails/?id=2266068546) - Cozar
 
-Deep storage stockpiles implementing the `IHoldMultiplethings` component are a *must* in any modpack.
-* [LWM's Deep Storage](https://steamcommunity.com/sharedfiles/filedetails/?id=1617282896) - Little White Mouse
-* [KV RimFridge](https://steamcommunity.com/sharedfiles/filedetails/?id=1180721235)
+IHaulMultipleThings.dll from:
 * [PickupAndHaul](https://steamcommunity.com/sharedfiles/filedetails/?id=1279012058) - Mehni
 
-I got most of the GUI hooks and all the Transpiler stuff from a great and beautiful mod: Stockpile Ranking.
-* [Stockpile Ranking](https://steamcommunity.com/sharedfiles/filedetails/?id=1558464886) - Uuugggg aka AlexTD
+I got most of the GUI hooks and all the Transpiler stuff from Uuugggg's (AlexTD) Stockpile Ranking.
+* [Stockpile Ranking](https://steamcommunity.com/sharedfiles/filedetails/?id=1558464886) - Uuugggg (AlexTD)
 
 This mod relies heavily on Harmony for ease of patching.
 * [Harmony](https://steamcommunity.com/workshop/filedetails/?id=2040656402) - pardeike
