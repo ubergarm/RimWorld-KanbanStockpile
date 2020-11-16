@@ -19,67 +19,67 @@ namespace KanbanStockpile
 {
     //********************
     //ITab_Storage Patches
-	[HarmonyPatch(typeof(ITab_Storage), "TopAreaHeight", MethodType.Getter)]
-	static class ITab_Storage_TopAreaHeight_Patch
-	{
-		//private float TopAreaHeight
-		public const float extraHeight = 28f;
-		public static void Postfix(ref float __result)
-		{
-			__result += extraHeight;
-		}
-	}
+    [HarmonyPatch(typeof(ITab_Storage), "TopAreaHeight", MethodType.Getter)]
+    static class ITab_Storage_TopAreaHeight_Patch
+    {
+        //private float TopAreaHeight
+        public const float extraHeight = 28f;
+        public static void Postfix(ref float __result)
+        {
+            __result += extraHeight;
+        }
+    }
 
-	[HarmonyPatch(typeof(ITab_Storage), "FillTab")]
-	static class ITab_Storage_FillTab_Patch
-	{
-		//protected override void FillTab()
-		static MethodInfo GetTopAreaHeight = AccessTools.Property(typeof(ITab_Storage), "TopAreaHeight").GetGetMethod(true);
-		public static IEnumerable<CodeInstruction> Transpiler(IEnumerable<CodeInstruction> instructions)
-		{
-			//		public static void BeginGroup(Rect position);
-			MethodInfo BeginGroupInfo = AccessTools.Method(typeof(GUI), nameof(GUI.BeginGroup), new Type[] { typeof(Rect) });
+    [HarmonyPatch(typeof(ITab_Storage), "FillTab")]
+    static class ITab_Storage_FillTab_Patch
+    {
+        //protected override void FillTab()
+        static MethodInfo GetTopAreaHeight = AccessTools.Property(typeof(ITab_Storage), "TopAreaHeight").GetGetMethod(true);
+        public static IEnumerable<CodeInstruction> Transpiler(IEnumerable<CodeInstruction> instructions)
+        {
+            //		public static void BeginGroup(Rect position);
+            MethodInfo BeginGroupInfo = AccessTools.Method(typeof(GUI), nameof(GUI.BeginGroup), new Type[] { typeof(Rect) });
 
-			//class Verse.ThingFilter RimWorld.StorageSettings::'filter'
-			FieldInfo filterInfo = AccessTools.Field(typeof(StorageSettings), "filter");
-			MethodInfo DoThingFilterConfigWindowInfo = AccessTools.Method(typeof(ThingFilterUI), "DoThingFilterConfigWindow");
+            //class Verse.ThingFilter RimWorld.StorageSettings::'filter'
+            FieldInfo filterInfo = AccessTools.Field(typeof(StorageSettings), "filter");
+            MethodInfo DoThingFilterConfigWindowInfo = AccessTools.Method(typeof(ThingFilterUI), "DoThingFilterConfigWindow");
 
-			bool firstTopAreaHeight = true;
-			List<CodeInstruction> instList = instructions.ToList();
-			for(int i=0;i<instList.Count;i++)
-			{
-				CodeInstruction inst = instList[i];
+            bool firstTopAreaHeight = true;
+            List<CodeInstruction> instList = instructions.ToList();
+            for(int i=0;i<instList.Count;i++)
+            {
+                CodeInstruction inst = instList[i];
 
                 yield return inst;
 
-				if (firstTopAreaHeight &&
-					inst.Calls(GetTopAreaHeight))
-				{
-					firstTopAreaHeight = false;
-					yield return new CodeInstruction(OpCodes.Ldc_R4, ITab_Storage_TopAreaHeight_Patch.extraHeight);
-					yield return new CodeInstruction(OpCodes.Sub);
-				}
+                if (firstTopAreaHeight &&
+                        inst.Calls(GetTopAreaHeight))
+                {
+                    firstTopAreaHeight = false;
+                    yield return new CodeInstruction(OpCodes.Ldc_R4, ITab_Storage_TopAreaHeight_Patch.extraHeight);
+                    yield return new CodeInstruction(OpCodes.Sub);
+                }
 
-				if(inst.Calls(BeginGroupInfo))
-				{
-					yield return new CodeInstruction(OpCodes.Ldarg_0);//ITab_Storage this
-					yield return new CodeInstruction(OpCodes.Call, AccessTools.Method(typeof(ITab_Storage_FillTab_Patch), nameof(DrawKanbanSettings)));
-				}
-			}
-		}
+                if(inst.Calls(BeginGroupInfo))
+                {
+                    yield return new CodeInstruction(OpCodes.Ldarg_0);//ITab_Storage this
+                    yield return new CodeInstruction(OpCodes.Call, AccessTools.Method(typeof(ITab_Storage_FillTab_Patch), nameof(DrawKanbanSettings)));
+                }
+            }
+        }
 
         public static DateTime lastUpdateTime = DateTime.Now;
-		public static PropertyInfo SelStoreInfo = AccessTools.Property(typeof(ITab_Storage), "SelStoreSettingsParent");
-		public static void DrawKanbanSettings(ITab_Storage tab)
-		{
-			IHaulDestination haulDestination = SelStoreInfo.GetValue(tab, null) as IHaulDestination;
-			if (haulDestination == null) return;
-			StorageSettings settings = haulDestination.GetStoreSettings();
-			if (settings == null) return;
+        public static PropertyInfo SelStoreInfo = AccessTools.Property(typeof(ITab_Storage), "SelStoreSettingsParent");
+        public static void DrawKanbanSettings(ITab_Storage tab)
+        {
+            IHaulDestination haulDestination = SelStoreInfo.GetValue(tab, null) as IHaulDestination;
+            if (haulDestination == null) return;
+            StorageSettings settings = haulDestination.GetStoreSettings();
+            if (settings == null) return;
 
-			//ITab_Storage.WinSize = 300
-			float buttonMargin = ITab_Storage_TopAreaHeight_Patch.extraHeight + 4;
-			Rect rect = new Rect(0f, (float)GetTopAreaHeight.Invoke(tab, new object[] { }) - ITab_Storage_TopAreaHeight_Patch.extraHeight - 2, 280, ITab_Storage_TopAreaHeight_Patch.extraHeight);
+            //ITab_Storage.WinSize = 300
+            float buttonMargin = ITab_Storage_TopAreaHeight_Patch.extraHeight + 4;
+            Rect rect = new Rect(0f, (float)GetTopAreaHeight.Invoke(tab, new object[] { }) - ITab_Storage_TopAreaHeight_Patch.extraHeight - 2, 280, ITab_Storage_TopAreaHeight_Patch.extraHeight);
 
             rect.x += buttonMargin;
             rect.width -= buttonMargin * 3;
@@ -101,15 +101,15 @@ namespace KanbanStockpile
 
             //Stack Refill Threshold Slider
             tmp.srt = (int)Widgets.HorizontalSlider(new Rect(0f, rect.yMin + 10f, 150f, 15f),
-                                                    ks.srt, 0f, 100f, false, stackRefillThresholdLabel, null, null, 1f);
+                    ks.srt, 0f, 100f, false, stackRefillThresholdLabel, null, null, 1f);
 
             //Similar Stack Limit Slider
             tmp.ssl = (int)Widgets.HorizontalSlider(new Rect(155, rect.yMin + 10f, 125f, 15f),
-                                                    ks.ssl, 0f, 8f, false, similarStackLimitLabel, null, null, 1f);
+                    ks.ssl, 0f, 8f, false, similarStackLimitLabel, null, null, 1f);
 
 
             if( (ks.srt != tmp.srt) ||
-                (ks.ssl != tmp.ssl) ) {
+                    (ks.ssl != tmp.ssl) ) {
 
                 // Accept slider changes no faster than 4Hz (250ms) to prevent spamming multiplayer sync lag
                 DateTime curTime = DateTime.Now;
@@ -123,8 +123,8 @@ namespace KanbanStockpile
                 ks.ssl = tmp.ssl;
                 State.Set(settings.owner.ToString(), ks);
             }
-		}
-	}
+        }
+    }
 
 
     //********************
@@ -157,7 +157,7 @@ namespace KanbanStockpile
             // not a big deal to depend on that IHoldMultipleThings.dll but there is a re-upload of
             // Pick Up And Haul which has some code changes, dunno about this specific lib though...
             bool isDeepStorage = ( (slotGroup?.parent is ThingWithComps) &&
-                                   (((ThingWithComps)slotGroup.parent).AllComps.OfType<IHoldMultipleThings.IHoldMultipleThings>() != null) );
+                    (((ThingWithComps)slotGroup.parent).AllComps.OfType<IHoldMultipleThings.IHoldMultipleThings>() != null) );
 
             // StackRefillThreshold checks only here at cell c
             List<Thing> things = map.thingGrid.ThingsListAt(c);
@@ -171,13 +171,15 @@ namespace KanbanStockpile
                 if (t.stackCount > (t.def.stackLimit * ks.srt / 100f)) continue; // no need to refill until count is below threshold
 
                 if (!isDeepStorage) {
-                    // pawns are smart enough to grab a partial stack for vanilla stockpile so no need to explicitly check here
+                    // pawns are smart enough to grab a partial stack for vanilla cell stockpiles so no need to explicitly check here
+                    // maybe this is a JobDefOf.HaulToCell job?
                     KSLog.Message("[KanbanStockpile] YES HAUL PARTIAL STACK OF THING TO TOPOFF STACK IN STOCKPILE!");
                     __result = true;
                     return;
                 } else if (((t.stackCount + thing.stackCount) <= t.def.stackLimit)) {
-                    // pawns seem to try to haul a full stack no matter what for deep storage unlike vanilla stockpiles
+                    // pawns seem to try to haul a full stack no matter what for deep storage containers unlike vanilla cell stockpiles
                     // so for here when trying to haul to deep storage explicitly ensure stack to haul is partial stack
+                    // maybe this is a JobDefOf.HaulToContainer job?
                     KSLog.Message("[KanbanStockpile] YES HAUL EXISTING PARTIAL STACK OF THING TO DEEP STORAGE!");
                     __result = true;
                     return;
@@ -192,7 +194,7 @@ namespace KanbanStockpile
                 for (int i = 0; i < things.Count; i++) {
                     Thing t = things[i];
                     if (!t.def.EverStorable(false)) continue; // skip non-storable things as they aren't actually *in* the stockpile
-                    if (!t.CanStackWith(thing)) continue; // don't count it if it cannot stack
+                    if (!t.CanStackWith(thing)) continue; // skip it if it cannot stack with thing to haul
 
                     // even a partial stack is a dupe so count it regardless
                     numDuplicates++;
@@ -201,6 +203,46 @@ namespace KanbanStockpile
                         __result = false;
                         return;
                     }
+                }
+            }
+
+            // SimilarStackLimit check all things already "in-flight" to be hauled to this slotgroup (potentially CPU intensive if many haulers)
+            // iterate over all PawnsInFaction instead of FreeColonists to hopefully get animals that may be hauling as well
+            //foreach (var actor in map.mapPawns.PawnsInFaction(Faction.OfPlayer)) {
+            for (int i = 0; i < map.mapPawns.PawnsInFaction(Faction.OfPlayer).Count; i++) {
+                Pawn actor = map.mapPawns.PawnsInFaction(Faction.OfPlayer)[i];
+                if (actor == null) continue;
+                if (actor.CurJob == null) continue;
+                if (!(actor.CurJobDef == JobDefOf.HaulToCell || actor.CurJobDef == JobDefOf.HaulToContainer)) continue;
+                Thing hauledThing = actor.CurJob.targetA.Thing;
+                if (hauledThing == null) continue;
+                if (hauledThing == thing) continue;  // no need to check against itself
+                if (!hauledThing.CanStackWith(thing)) continue; // skip it if it cannot stack with thing to haul
+
+                // finding out the destination slotgroup depends on the exact JobDefOf afaict
+                IntVec3 dest;
+                if (actor.CurJobDef == JobDefOf.HaulToCell) {
+                    dest = actor.CurJob.targetB.Cell;
+                } else {
+                    // case of JobDefOf.HaulToContainer
+                    Thing container = actor.CurJob.targetB.Thing;
+                    if (container == null) continue;
+                    dest = container.Position;
+                }
+
+                if (dest == null) continue;
+                SlotGroup sg = dest.GetSlotGroup(map);
+                if (sg == null) continue;
+                if (sg != slotGroup) continue; // skip it as the similar thing is being hauled to a different stockpile
+
+                // there is a different item that can stack with this item and is already being hauled to the desired stockpile: DUPE!
+                numDuplicates++;
+                if (numDuplicates >= ks.ssl) {
+                    KSLog.Message("[KanbanStockpile] Pawn " + actor.Name + " is hauling " + hauledThing + " to " + sg);
+                    KSLog.Message("[KanbanStockpile] Apparently " + hauledThing + " can stack with " + thing);
+                    KSLog.Message("[KanbanStockpile] NO DON'T HAUL AS THERE IS ALREADY SOMEONE ELSE TAKING CARE OF IT!");
+                    __result = false;
+                    return;
                 }
             }
 
