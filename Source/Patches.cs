@@ -216,6 +216,8 @@ namespace KanbanStockpile
                 }
             }
 
+            // feature flag gate this experimental and CPU intensive implementation for now
+            if (KanbanStockpile.Settings.aggressiveSimilarStockpileLimiting == false) return;
             // SimilarStackLimit check all things already "in-flight" to be hauled to this slotgroup (potentially CPU intensive if many haulers)
             // iterate over all PawnsInFaction instead of FreeColonists to hopefully get animals that may be hauling as well
             //foreach (var actor in map.mapPawns.PawnsInFaction(Faction.OfPlayer)) {

@@ -3,4 +3,6 @@
     <KS.StackRefillThreshold>StackRefillThreshold {0}%</KS.StackRefillThreshold>
     <KS.SimilarStackLimit>SimilarStackLimit {0}</KS.SimilarStackLimit>
     <KS.SimilarStackLimitOff>SimilarStackLimit OFF</KS.SimilarStackLimitOff>
+    <KS.Experimental>[experimental feature - currently CPU intensive]</KS.Experimental>
+    <KS.AggressiveSimilarStockpileLimiting>Aggressive Similar Stockpile Limiting</KS.AggressiveSimilarStockpileLimiting>
 </LanguageData>

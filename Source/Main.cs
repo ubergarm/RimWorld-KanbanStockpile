@@ -49,10 +49,23 @@ namespace KanbanStockpile
         }
     }
 
-	public class KanbanStockpile : Mod
-	{
+    public class KanbanStockpile : Mod
+    {
+        public static KanbanStockpileSettings Settings;
+
         public KanbanStockpile(ModContentPack content) : base(content)
         {
+            Settings = GetSettings<KanbanStockpileSettings>();
+        }
+
+        public override void DoSettingsWindowContents(Rect inRect)
+        {
+            KanbanStockpileSettings.DoWindowContents(inRect);
+        }
+
+        public override string SettingsCategory()
+        {
+            return "KanbanStockpile";
         }
     }
 
