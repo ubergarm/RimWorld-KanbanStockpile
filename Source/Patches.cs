@@ -9,6 +9,7 @@ using RimWorld;
 using HarmonyLib;
 using Multiplayer.API;
 using Verse;
+using Verse.AI;
 
 // LWM.DeepStorage and Mehni PickUpAndHaul Dependency
 // https://github.com/Mehni/PickUpAndHaul/tree/master/1.1/Assemblies
@@ -138,6 +139,7 @@ namespace KanbanStockpile
     [HarmonyPatch(typeof(StoreUtility), "NoStorageBlockersIn")]
     public class StoreUtility_NoStorageBlockersIn_Patch
     {
+        private static FieldInfo ReservationsListInfo = AccessTools.Field(typeof(ReservationManager), "reservations");
         public static void Postfix(ref bool __result, IntVec3 c, Map map, Thing thing)
         {
             // NOTE: Likely LWM Deep Storages Prefix() and Vanilla NoStorageBlockersIn() itself have already run
@@ -218,9 +220,68 @@ namespace KanbanStockpile
 
             // feature flag gate this experimental and CPU intensive implementation for now
             if (KanbanStockpile.Settings.aggressiveSimilarStockpileLimiting == false) return;
+
+            // var reservationManager = map.reservationManager;
+            // private List<ReservationManager.Reservation> reservations = new List<ReservationManager.Reservation>();
+            // private LocalTargetInfo target;
+            // public IntVec3 Cell
+
+            // IMPLEMENTATION THETA lmao
+            // FieldInfo ReservationsListInfo = AccessTools.Field(typeof(ReservationManager), "reservations");
+            if (map.reservationManager == null) return;
+            var reservations = ReservationsListInfo.GetValue(map.reservationManager) as List<ReservationManager.Reservation>;
+            if (reservations == null) return;
+            //Log.Message("[KanbanStockpile] Reservation Manager current number of reservations: " + reservations.Count);
+            foreach (ReservationManager.Reservation r in reservations) {
+                if (r == null) continue;
+                if (r.Job == null) continue;
+                if (!(r.Job.def == JobDefOf.HaulToCell || r.Job.def == JobDefOf.HaulToContainer)) continue;
+
+                Thing hauledThing = r.Job.targetA.Thing;
+                if (hauledThing == null) continue;
+                if (hauledThing == thing) continue;  // no need to check against itself
+                if (!hauledThing.CanStackWith(thing)) continue; // skip it if it cannot stack with thing to haul
+
+                IntVec3 dest;
+                if (r.Job.def == JobDefOf.HaulToCell) {
+                    dest = r.Job.targetB.Cell;
+                } else {
+                    // case of JobDefOf.HaulToContainer
+                    Thing container = r.Job.targetB.Thing;
+                    if (container == null) continue;
+                    dest = container.Position;
+                }
+
+                if (dest == null) continue;
+                SlotGroup sg = dest.GetSlotGroup(map);
+                if (sg == null) continue;
+                if (sg != slotGroup) continue; // skip it as the similar thing is being hauled to a different stockpile
+
+                // there is a thing that can stack with this thing and is already reserved for hauling to the desired stockpile: DUPE!
+                numDuplicates++;
+                if (numDuplicates >= ks.ssl) {
+                    Log.Message("[KanbanStockpile] NO DON'T HAUL AS THERE IS ALREADY SOMEONE RESERVING JOB TO DO IT!");
+                    __result = false;
+                    return;
+                }
+            }
+            return;
+
+            // IMPLEMENTATION BETA
+            //public bool ReservedBy(LocalTargetInfo target, Pawn claimant, Job job = null)
+            //foreach(ReservationManager.Reservation r in map.reservationManager.reservations) {
+            //LocalTargetInfo lti = new LocalTargetInfo(c);
+            //for (int i = 0; i < map.mapPawns.PawnsInFaction(Faction.OfPlayer).Count; i++) {
+            //    Pawn actor = map.mapPawns.PawnsInFaction(Faction.OfPlayer)[i];
+            //    if (actor == null) continue;
+            //    if (map.reservationManager.ReservedBy(lti, actor)) {
+            //        Log.Message("[KanbanStockpile] Reservation Manager: Pawn " + actor.Name + " at " + lti.Cell);
+            //    }
+            //}
+
+            // IMPLEMENTATION ALPHA
             // SimilarStackLimit check all things already "in-flight" to be hauled to this slotgroup (potentially CPU intensive if many haulers)
             // iterate over all PawnsInFaction instead of FreeColonists to hopefully get animals that may be hauling as well
-            //foreach (var actor in map.mapPawns.PawnsInFaction(Faction.OfPlayer)) {
             for (int i = 0; i < map.mapPawns.PawnsInFaction(Faction.OfPlayer).Count; i++) {
                 Pawn actor = map.mapPawns.PawnsInFaction(Faction.OfPlayer)[i];
                 if (actor == null) continue;
