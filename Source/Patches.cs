@@ -175,6 +175,7 @@ namespace KanbanStockpile
             List<Thing> things = map.thingGrid.ThingsListAt(c);
             int numDuplicates = 0;
 
+            // TODO #5 re-order to prevent refilling an accidental/leftover duplicate stack
             // Design Decision: use for loops instead of foreach as they may be faster and similar to this vanilla function
             for (int i = 0; i < things.Count; i++) {
                 Thing t = things[i];
@@ -200,6 +201,7 @@ namespace KanbanStockpile
 
             if (ks.ssl == 0) return;
             // SimilarStackLimit check all cells in the slotgroup (potentially CPU intensive for big zones/limits)
+            // TODO #4 SlotGroup.HeldThings
             for (int j = 0; j < slotGroup.CellsList.Count; j++) {
                 IntVec3 cell = slotGroup.CellsList[j];
                 things = map.thingGrid.ThingsListAt(cell);
@@ -218,21 +220,17 @@ namespace KanbanStockpile
                 }
             }
 
-            // feature flag gate this experimental and CPU intensive implementation for now
+            // TODO #6 test this and decide if feature flag should default to TRUE
+            // feature flag gate this experimental and potentially CPU intensive implementation for now
             if (KanbanStockpile.Settings.aggressiveSimilarStockpileLimiting == false) return;
 
-            // var reservationManager = map.reservationManager;
-            // private List<ReservationManager.Reservation> reservations = new List<ReservationManager.Reservation>();
-            // private LocalTargetInfo target;
-            // public IntVec3 Cell
-
-            // IMPLEMENTATION THETA lmao
-            // FieldInfo ReservationsListInfo = AccessTools.Field(typeof(ReservationManager), "reservations");
+            // iterate over all outstanding reserved jobs to prevent hauling duplicate similar stacks
             if (map.reservationManager == null) return;
             var reservations = ReservationsListInfo.GetValue(map.reservationManager) as List<ReservationManager.Reservation>;
             if (reservations == null) return;
-            //Log.Message("[KanbanStockpile] Reservation Manager current number of reservations: " + reservations.Count);
-            foreach (ReservationManager.Reservation r in reservations) {
+            ReservationManager.Reservation r;
+            for (int i = 0; i < reservations.Count; i++) {
+                r = reservations[i];
                 if (r == null) continue;
                 if (r.Job == null) continue;
                 if (!(r.Job.def == JobDefOf.HaulToCell || r.Job.def == JobDefOf.HaulToContainer)) continue;
@@ -260,60 +258,7 @@ namespace KanbanStockpile
                 // there is a thing that can stack with this thing and is already reserved for hauling to the desired stockpile: DUPE!
                 numDuplicates++;
                 if (numDuplicates >= ks.ssl) {
-                    Log.Message("[KanbanStockpile] NO DON'T HAUL AS THERE IS ALREADY SOMEONE RESERVING JOB TO DO IT!");
-                    __result = false;
-                    return;
-                }
-            }
-            return;
-
-            // IMPLEMENTATION BETA
-            //public bool ReservedBy(LocalTargetInfo target, Pawn claimant, Job job = null)
-            //foreach(ReservationManager.Reservation r in map.reservationManager.reservations) {
-            //LocalTargetInfo lti = new LocalTargetInfo(c);
-            //for (int i = 0; i < map.mapPawns.PawnsInFaction(Faction.OfPlayer).Count; i++) {
-            //    Pawn actor = map.mapPawns.PawnsInFaction(Faction.OfPlayer)[i];
-            //    if (actor == null) continue;
-            //    if (map.reservationManager.ReservedBy(lti, actor)) {
-            //        Log.Message("[KanbanStockpile] Reservation Manager: Pawn " + actor.Name + " at " + lti.Cell);
-            //    }
-            //}
-
-            // IMPLEMENTATION ALPHA
-            // SimilarStackLimit check all things already "in-flight" to be hauled to this slotgroup (potentially CPU intensive if many haulers)
-            // iterate over all PawnsInFaction instead of FreeColonists to hopefully get animals that may be hauling as well
-            for (int i = 0; i < map.mapPawns.PawnsInFaction(Faction.OfPlayer).Count; i++) {
-                Pawn actor = map.mapPawns.PawnsInFaction(Faction.OfPlayer)[i];
-                if (actor == null) continue;
-                if (actor.CurJob == null) continue;
-                if (!(actor.CurJobDef == JobDefOf.HaulToCell || actor.CurJobDef == JobDefOf.HaulToContainer)) continue;
-                Thing hauledThing = actor.CurJob.targetA.Thing;
-                if (hauledThing == null) continue;
-                if (hauledThing == thing) continue;  // no need to check against itself
-                if (!hauledThing.CanStackWith(thing)) continue; // skip it if it cannot stack with thing to haul
-
-                // finding out the destination slotgroup depends on the exact JobDefOf afaict
-                IntVec3 dest;
-                if (actor.CurJobDef == JobDefOf.HaulToCell) {
-                    dest = actor.CurJob.targetB.Cell;
-                } else {
-                    // case of JobDefOf.HaulToContainer
-                    Thing container = actor.CurJob.targetB.Thing;
-                    if (container == null) continue;
-                    dest = container.Position;
-                }
-
-                if (dest == null) continue;
-                SlotGroup sg = dest.GetSlotGroup(map);
-                if (sg == null) continue;
-                if (sg != slotGroup) continue; // skip it as the similar thing is being hauled to a different stockpile
-
-                // there is a different item that can stack with this item and is already being hauled to the desired stockpile: DUPE!
-                numDuplicates++;
-                if (numDuplicates >= ks.ssl) {
-                    KSLog.Message("[KanbanStockpile] Pawn " + actor.Name + " is hauling " + hauledThing + " to " + sg);
-                    KSLog.Message("[KanbanStockpile] Apparently " + hauledThing + " can stack with " + thing);
-                    KSLog.Message("[KanbanStockpile] NO DON'T HAUL AS THERE IS ALREADY SOMEONE ELSE TAKING CARE OF IT!");
+                    KSLog.Message("[KanbanStockpile] NO DON'T HAUL AS THERE IS ALREADY SOMEONE RESERVING JOB TO DO IT!");
                     __result = false;
                     return;
                 }
