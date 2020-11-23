@@ -1,3 +1,6 @@
+## v1.0.4
+- Remove dependency on IHoldMultipleThings.dll when detecting building/deep storage vs cell storage stockpiles
+
 ## v1.0.3
 - Aggressive Similar Stockpile Limiting now defaults to *ENABLED* - turn it off if it hits your performance too hard
 - Aggressive Similar Stockpile Limiting now scans all outstanding reservations to prevent hauling duplicate stacks

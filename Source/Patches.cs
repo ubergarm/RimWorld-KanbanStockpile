@@ -11,11 +11,6 @@ using Multiplayer.API;
 using Verse;
 using Verse.AI;
 
-// LWM.DeepStorage and Mehni PickUpAndHaul Dependency
-// https://github.com/Mehni/PickUpAndHaul/tree/master/1.1/Assemblies
-// sha1sum 27c0f6a544ff7c69bad900549e96b3460c8edbc2  DLLs/IHoldMultipleThings.dll
-using IHoldMultipleThings;
-
 namespace KanbanStockpile
 {
     //********************
@@ -160,16 +155,8 @@ namespace KanbanStockpile
             // skip all this stuff now if stockpile is not configured to use at least one feature
             if (ks.srt == 100 && ks.ssl == 0) return;
 
-            // is there a better way to detect if a thing in this cell is a "deep storage" type?
-            // maybe doing some fancy reflection or some runtime thing to reach into that mod? lol
-            // not a big deal to depend on that IHoldMultipleThings.dll but there is a re-upload of
-            // Pick Up And Haul which has some code changes, dunno about this specific lib though...
-            // Note: its not just deep storage, but seems like any a JobDefOf.HaulToContainer behavior?
-            bool isDeepStorage = false;
-            if (KanbanStockpileLoader.IsLWMDeepStorageLoaded) {
-                isDeepStorage = ( (slotGroup?.parent is ThingWithComps) &&
-                                  (((ThingWithComps)slotGroup.parent).AllComps.OfType<IHoldMultipleThings.IHoldMultipleThings>() != null) );
-            }
+            // Assuming JobDefOf.HaulToContainer for Building_Storage vs JobDefOf.HaulToCell otherwise
+            bool isContainer = (slotGroup?.parent is Building_Storage);
 
             // StackRefillThreshold checks only here at cell c
             List<Thing> things = map.thingGrid.ThingsListAt(c);
@@ -183,17 +170,17 @@ namespace KanbanStockpile
                 if (!t.CanStackWith(thing)) continue; // skip it if it cannot stack with thing to haul
                 if (t.stackCount > (t.def.stackLimit * ks.srt / 100f)) continue; // no need to refill until count is below threshold
 
-                if (!isDeepStorage) {
+                if (!isContainer) {
                     // pawns are smart enough to grab a partial stack for vanilla cell stockpiles so no need to explicitly check here
                     // maybe this is a JobDefOf.HaulToCell job?
-                    KSLog.Message("[KanbanStockpile] YES HAUL PARTIAL STACK OF THING TO TOPOFF STACK IN STOCKPILE!");
+                    KSLog.Message("[KanbanStockpile] YES HAUL PARTIAL STACK OF THING TO TOPOFF STACK IN CELL STOCKPILE!");
                     __result = true;
                     return;
                 } else if (((t.stackCount + thing.stackCount) <= t.def.stackLimit)) {
                     // pawns seem to try to haul a full stack no matter what for HaulToContainer unlike HaulToCell CurJobDef's
                     // so for here when trying to haul to deep storage explicitly ensure stack to haul is partial stack
                     // maybe this is a JobDefOf.HaulToContainer job?
-                    KSLog.Message("[KanbanStockpile] YES HAUL EXISTING PARTIAL STACK OF THING TO DEEP STORAGE!");
+                    KSLog.Message("[KanbanStockpile] YES HAUL EXISTING PARTIAL STACK OF THING TO BUILDING STORAGE CONTAINER!");
                     __result = true;
                     return;
                 }

@@ -12,10 +12,10 @@ stockpiles and deep storage inspired by kanban logistic control systems.
 and it won't trigger hauling jobs for any specific stack until there
 are less than or equal to 2 meals left in it (meal stack size is 10).
 
-*Note*: This feature works in deep storage stockpiles, however colonists
+*Note*: This feature works in building/deep storage stockpiles, however colonists
 will only refill partial stacks using an existing partial stack that can
 fit. They aren't smart enough to break up a full stack into one small
-enough to fit perfectly in deep storage.  *(they are smart enough to
+enough to fit perfectly in building/deep storage.  *(they are smart enough to
 do this for a regular vanilla stockpile however)*
 
 #### Similar Stack Limit
@@ -50,8 +50,6 @@ until it has been completely used up.
 * [Stockpile Ranking](https://steamcommunity.com/sharedfiles/filedetails/?id=1558464886) - Uuugggg (AlexTD)
 * [Simple Search Bar](https://steamcommunity.com/sharedfiles/filedetails/?id=1827546987) - Gguake
 
-*Note*: Place `LWM Deep Storage` above `KanbanStockpile` in mod load order required for `Stack Refill Threshold` feature in deep storage.
-
 Please comment below with results if you test this mod with your own favorite storage mods, thanks!
 
 ## Credits
@@ -62,9 +60,6 @@ Original idea and inspiration came from my failed attempt to multiplayer patch S
 
 Inspiration for the `Similar Stack Limit` feature came directly from the great Variety Matters Stockpile.
 * [VarietyMattersStockpile](https://steamcommunity.com/workshop/filedetails/?id=2266068546) - Cozar
-
-IHaulMultipleThings.dll from:
-* [PickupAndHaul](https://steamcommunity.com/sharedfiles/filedetails/?id=1279012058) - Mehni
 
 I got most of the GUI hooks and all the Transpiler stuff from Uuugggg's (AlexTD) Stockpile Ranking.
 * [Stockpile Ranking](https://steamcommunity.com/sharedfiles/filedetails/?id=1558464886) - Uuugggg (AlexTD)
