@@ -175,7 +175,7 @@ namespace KanbanStockpile
             List<Thing> things = map.thingGrid.ThingsListAt(c);
             int numDuplicates = 0;
 
-            // TODO #5 re-order to prevent refilling an accidental/leftover duplicate stack
+            // TODO #5 consider re-ordering to prevent refilling an accidental/leftover duplicate stack
             // Design Decision: use for loops instead of foreach as they may be faster and similar to this vanilla function
             for (int i = 0; i < things.Count; i++) {
                 Thing t = things[i];
@@ -201,7 +201,7 @@ namespace KanbanStockpile
 
             if (ks.ssl == 0) return;
             // SimilarStackLimit check all cells in the slotgroup (potentially CPU intensive for big zones/limits)
-            // TODO #4 SlotGroup.HeldThings
+            // SlotGroup.HeldThings
             for (int j = 0; j < slotGroup.CellsList.Count; j++) {
                 IntVec3 cell = slotGroup.CellsList[j];
                 things = map.thingGrid.ThingsListAt(cell);
@@ -220,11 +220,8 @@ namespace KanbanStockpile
                 }
             }
 
-            // TODO #6 test this and decide if feature flag should default to TRUE
-            // feature flag gate this experimental and potentially CPU intensive implementation for now
-            if (KanbanStockpile.Settings.aggressiveSimilarStockpileLimiting == false) return;
-
             // iterate over all outstanding reserved jobs to prevent hauling duplicate similar stacks
+            if (KanbanStockpile.Settings.aggressiveSimilarStockpileLimiting == false) return;
             if (map.reservationManager == null) return;
             var reservations = ReservationsListInfo.GetValue(map.reservationManager) as List<ReservationManager.Reservation>;
             if (reservations == null) return;
@@ -235,10 +232,10 @@ namespace KanbanStockpile
                 if (r.Job == null) continue;
                 if (!(r.Job.def == JobDefOf.HaulToCell || r.Job.def == JobDefOf.HaulToContainer)) continue;
 
-                Thing hauledThing = r.Job.targetA.Thing;
-                if (hauledThing == null) continue;
-                if (hauledThing == thing) continue;  // no need to check against itself
-                if (!hauledThing.CanStackWith(thing)) continue; // skip it if it cannot stack with thing to haul
+                Thing t = r.Job.targetA.Thing;
+                if (t == null) continue;
+                if (t == thing) continue;  // no need to check against itself
+                if (!t.CanStackWith(thing)) continue; // skip it if it cannot stack with thing to haul
 
                 IntVec3 dest;
                 if (r.Job.def == JobDefOf.HaulToCell) {

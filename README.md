@@ -42,6 +42,7 @@ until it has been completely used up.
 * Uses `for` loops similar to vanilla style code for basic `C#` optimization
 * Skips hot code paths anytime a stockpile is set to default values
 * Avoid using high values of `Similar Stack Limit` in large stockpiles as it must scan every thing in every cell
+* Turn off `Aggressive Similar Stockpile Limiting` in Settings if you have an older CPU or large colony with many reserved hauling jobs to scan
 
 ## Compatible Mods
 * [LWM's Deep Storage](https://steamcommunity.com/sharedfiles/filedetails/?id=1617282896) - Little White Mouse

@@ -6,12 +6,12 @@ namespace KanbanStockpile
 {
     public class KanbanStockpileSettings : ModSettings
     {
-        public bool aggressiveSimilarStockpileLimiting = false;
+        public bool aggressiveSimilarStockpileLimiting = true;
 
         public override void ExposeData()
         {
             base.ExposeData();
-            Scribe_Values.Look(ref aggressiveSimilarStockpileLimiting, "aggressiveSimilarStockpileLimiting", false, true);
+            Scribe_Values.Look(ref aggressiveSimilarStockpileLimiting, "aggressiveSimilarStockpileLimiting", true, true);
         }
 
         public static void DoWindowContents(Rect canvas)
