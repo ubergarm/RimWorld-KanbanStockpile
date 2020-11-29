@@ -71,12 +71,10 @@ namespace KanbanStockpile
 
 	public static class KSLog
     {
-        public static bool verbose = false;
+        [System.Diagnostics.Conditional("DEBUG")]
         public static void Message(string msg)
         {
-            if (verbose) {
-                Log.Message(msg);
-            }
+            Verse.Log.Message(msg);
         }
     }
 }
