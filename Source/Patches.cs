@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Linq;
 using System.Text;
 using System.Reflection;
@@ -285,9 +286,15 @@ namespace KanbanStockpile
     [HarmonyPatch(typeof(StorageSettings), nameof(StorageSettings.CopyFrom))]
 	class StorageSettings_CopyFrom_Patch
 	{
+        static readonly MethodBase Building_Storage_PostMake = AccessTools.Method(typeof(Building_Storage), nameof(Building_Storage.PostMake));
+
 		//public void CopyFrom(StorageSettings other)
         public static void CopyFrom(StorageSettings __instance, StorageSettings other)
         {
+            var st = new StackTrace();
+            if (st.FrameCount > 3 && st.GetFrame(2).GetMethod() == Building_Storage_PostMake)
+                return; // prevent copy settings when called from Building_Storage:PostMake, new storage - bananasss00
+
             KSLog.Message("[KanbanStockpile] CopyFrom()");
             string label = other?.owner?.ToString() ?? "___clipboard";
             KanbanSettings ks = State.Get(label);
