@@ -6,12 +6,14 @@ namespace KanbanStockpile
 {
     public class KanbanStockpileSettings : ModSettings
     {
-        public bool aggressiveSimilarStockpileLimiting = true;
+        public bool aggressiveSimilarStackChecking = true;
+        public bool considerDifferentMaterialSimilar = true;
 
         public override void ExposeData()
         {
             base.ExposeData();
-            Scribe_Values.Look(ref aggressiveSimilarStockpileLimiting, "aggressiveSimilarStockpileLimiting", true, true);
+            Scribe_Values.Look(ref aggressiveSimilarStackChecking, "aggressiveSimilarStackChecking", true, true);
+            Scribe_Values.Look(ref considerDifferentMaterialSimilar, "considerDifferentMaterialSimilar", true, true);
         }
 
         public static void DoWindowContents(Rect canvas)
@@ -21,8 +23,13 @@ namespace KanbanStockpile
             list.Begin(canvas);
             list.Gap(4);
 
-            list.Label("KS.Experimental".Translate());
-            list.CheckboxLabeled("KS.AggressiveSimilarStockpileLimiting".Translate(), ref KanbanStockpile.Settings.aggressiveSimilarStockpileLimiting);
+            list.CheckboxLabeled("KS.AggressiveSimilarStackChecking".Translate(),
+                                 ref KanbanStockpile.Settings.aggressiveSimilarStackChecking,
+                                 "KS.AggressiveSimilarStackCheckingTip".Translate());
+
+            list.CheckboxLabeled("KS.ConsiderDifferentMaterialSimilar".Translate(),
+                                 ref KanbanStockpile.Settings.considerDifferentMaterialSimilar,
+                                 "KS.ConsiderDifferentMaterialSimilarTip".Translate());
 
             list.End();
         }

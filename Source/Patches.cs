@@ -196,7 +196,9 @@ namespace KanbanStockpile
                 for (int i = 0; i < things.Count; i++) {
                     Thing t = things[i];
                     if (!t.def.EverStorable(false)) continue; // skip non-storable things as they aren't actually *in* the stockpile
-                    if (!t.CanStackWith(thing)) continue; // skip it if it cannot stack with thing to haul
+                    // skip things that cannot stack and have a different defName (depending on settings)
+                    if ( !t.CanStackWith(thing) &&
+                         !(KanbanStockpile.Settings.considerDifferentMaterialSimilar && t.def.stackLimit == 1 && t.def.defName == thing.def.defName) ) continue;
 
                     // even a partial stack is a dupe so count it regardless
                     numDuplicates++;
@@ -209,7 +211,7 @@ namespace KanbanStockpile
             }
 
             // iterate over all outstanding reserved jobs to prevent hauling duplicate similar stacks
-            if (KanbanStockpile.Settings.aggressiveSimilarStockpileLimiting == false) return;
+            if (KanbanStockpile.Settings.aggressiveSimilarStackChecking == false) return;
             if (map.reservationManager == null) return;
             var reservations = ReservationsListInfo.GetValue(map.reservationManager) as List<ReservationManager.Reservation>;
             if (reservations == null) return;
@@ -223,7 +225,9 @@ namespace KanbanStockpile
                 Thing t = r.Job.targetA.Thing;
                 if (t == null) continue;
                 if (t == thing) continue;  // no need to check against itself
-                if (!t.CanStackWith(thing)) continue; // skip it if it cannot stack with thing to haul
+                // skip things that cannot stack and have a different defName (depending on settings)
+                if ( !t.CanStackWith(thing) &&
+                     !(KanbanStockpile.Settings.considerDifferentMaterialSimilar && t.def.stackLimit == 1 && t.def.defName == thing.def.defName) ) continue;
 
                 IntVec3 dest;
                 if (r.Job.def == JobDefOf.HaulToCell) {
