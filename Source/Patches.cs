@@ -161,8 +161,6 @@ namespace KanbanStockpile
 
             // StackRefillThreshold checks only here at cell c
             List<Thing> things = map.thingGrid.ThingsListAt(c);
-            int numDuplicates = 0;
-
             // TODO #5 consider re-ordering to prevent refilling an accidental/leftover duplicate stack
             // Design Decision: use for loops instead of foreach as they may be faster and similar to this vanilla function
             for (int i = 0; i < things.Count; i++) {
@@ -174,39 +172,32 @@ namespace KanbanStockpile
                 if (!isContainer) {
                     // pawns are smart enough to grab a partial stack for vanilla cell stockpiles so no need to explicitly check here
                     // maybe this is a JobDefOf.HaulToCell job?
-                    KSLog.Message("[KanbanStockpile] YES HAUL PARTIAL STACK OF THING TO TOPOFF STACK IN CELL STOCKPILE!");
+                    KSLog.Message($"[KanbanStockpile] YES haul {thing} to {slotGroup} to topoff {t} {t.stackCount} in cell stockpile!");
                     __result = true;
                     return;
                 } else if (((t.stackCount + thing.stackCount) <= t.def.stackLimit)) {
                     // pawns seem to try to haul a full stack no matter what for HaulToContainer unlike HaulToCell CurJobDef's
                     // so for here when trying to haul to deep storage explicitly ensure stack to haul is partial stack
                     // maybe this is a JobDefOf.HaulToContainer job?
-                    KSLog.Message("[KanbanStockpile] YES HAUL EXISTING PARTIAL STACK OF THING TO BUILDING STORAGE CONTAINER!");
+                    KSLog.Message($"[KanbanStockpile] YES haul {thing} to {slotGroup} to topoff {t} {t.stackCount} in building storage stockpile!");
                     __result = true;
                     return;
                 }
             }
 
             if (ks.ssl == 0) return;
+            int numDuplicates = 0;
             // SimilarStackLimit check all cells in the slotgroup (potentially CPU intensive for big zones/limits)
             // SlotGroup.HeldThings
             for (int j = 0; j < slotGroup.CellsList.Count; j++) {
                 IntVec3 cell = slotGroup.CellsList[j];
                 things = map.thingGrid.ThingsListAt(cell);
-                for (int i = 0; i < things.Count; i++) {
-                    Thing t = things[i];
-                    if (!t.def.EverStorable(false)) continue; // skip non-storable things as they aren't actually *in* the stockpile
-                    // skip things that cannot stack and have a different defName (depending on settings)
-                    if ( !t.CanStackWith(thing) &&
-                         !(KanbanStockpile.Settings.considerDifferentMaterialSimilar && t.def.stackLimit == 1 && t.def.defName == thing.def.defName) ) continue;
 
-                    // even a partial stack is a dupe so count it regardless
-                    numDuplicates++;
-                    if (numDuplicates >= ks.ssl) {
-                        KSLog.Message("[KanbanStockpile] NO DON'T HAUL AS THERE IS ALREADY TOO MANY OF THAT KIND OF STACK!");
-                        __result = false;
-                        return;
-                    }
+                numDuplicates += KSUtil.CountSimilarStacks(things, thing, ks.ssl);
+                if (numDuplicates >= ks.ssl) {
+                    KSLog.Message($"[KanbanStockpile] Don't haul thing {thing} as slotGroup {slotGroup} already contains at least {numDuplicates}!");
+                    __result = false;
+                    return;
                 }
             }
 
@@ -220,22 +211,15 @@ namespace KanbanStockpile
                 r = reservations[i];
                 if (r == null) continue;
                 if (r.Job == null) continue;
-                KSLog.Message($"[KanbanStockpile] some reserved job has JobDefOf: {r.Job.def}");
-                if (!(r.Job.def == JobDefOf.HaulToCell || r.Job.def == JobDefOf.HaulToContainer || r.Job.def == PickUpAndHaulJobDefOf.HaulToInventory)) continue;
-
-                Thing t = r.Job.targetA.Thing;
-                if (t == null) continue;
-                if (t == thing) continue;  // no need to check against itself
-                // skip things that cannot stack and have a different defName (depending on settings)
-                if ( !t.CanStackWith(thing) &&
-                     !(KanbanStockpile.Settings.considerDifferentMaterialSimilar && t.def.stackLimit == 1 && t.def.defName == thing.def.defName) ) continue;
+                if (!(r.Job.def == JobDefOf.HaulToCell ||
+                      r.Job.def == JobDefOf.HaulToContainer ||
+                      r.Job.def == PickUpAndHaulJobDefOf.HaulToInventory)) continue;
 
                 IntVec3 dest;
-                if (r.Job.def == JobDefOf.HaulToCell) {
+                if (r.Job.def == JobDefOf.HaulToCell || r.Job.def == PickUpAndHaulJobDefOf.HaulToInventory) {
                     dest = r.Job.targetB.Cell;
-                } else {
-                    // case of JobDefOf.HaulToContainer or PickUpAndHaulJobDefOf.HaulToInventory
-                    KSLog.Message($"[KanbanStockpile] INNER SANCTUM WITH JobDefOf: {r.Job.def}");
+                } else  {
+                    // case JobDefOf.HaulToContainer
                     Thing container = r.Job.targetB.Thing;
                     if (container == null) continue;
                     dest = container.Position;
@@ -244,12 +228,26 @@ namespace KanbanStockpile
                 if (dest == null) continue;
                 SlotGroup sg = dest.GetSlotGroup(map);
                 if (sg == null) continue;
-                if (sg != slotGroup) continue; // skip it as the similar thing is being hauled to a different stockpile
+                if (sg != slotGroup) continue; // skip it this hauling reservation is going to a different stockpile
 
-                // there is a thing that can stack with this thing and is already reserved for hauling to the desired stockpile: DUPE!
-                numDuplicates++;
+                List<Thing> reservedThings = new List<Thing>();
+                if (false && r.Job.def == PickUpAndHaulJobDefOf.HaulToInventory) {
+                    // peel off all the Things in the queue and assume they're all going to this slot group (or check targetQueueB)
+                    for (int j = 0; j < r.Job.targetQueueA.Count; j++) {
+                        Thing t = r.Job.targetQueueA[i].Thing;
+                        if (t == null) continue;
+                        KSLog.Message($"[KanbanStockpile] [Aggressive] HaulToInventory thing in targetQueueA[{i}]: {t}!");
+                        reservedThings.Add(t);
+                    }
+                } else {
+                    Thing t = r.Job.targetA.Thing;
+                    if (t == null) continue;
+                    reservedThings.Add(r.Job.targetA.Thing);
+                }
+
+                numDuplicates += KSUtil.CountSimilarStacks(reservedThings, thing, (ks.ssl - numDuplicates));
                 if (numDuplicates >= ks.ssl) {
-                    KSLog.Message("[KanbanStockpile] NO DON'T HAUL AS THERE IS ALREADY SOMEONE RESERVING JOB TO DO IT!");
+                    KSLog.Message($"[KanbanStockpile] [Aggressive] Don't haul thing {thing} as slotGroup {slotGroup} already contains at least {numDuplicates}!");
                     __result = false;
                     return;
                 }

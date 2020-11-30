@@ -86,4 +86,33 @@ namespace KanbanStockpile
         public static JobDef HaulToInventory;
     }
 
+    // Utilities
+    // list of all stored things, the haulable thing in question, and max count before returning
+	public static class KSUtil {
+        public static int CountSimilarStacks(List<Thing> things, Thing thing, int max) {
+            int numDuplicates = 0;
+            for (int i = 0; i < things.Count; i++) {
+                Thing t = things[i];
+                if (t == null) continue;
+                // don't count non-storable things as they aren't actually *in* the stockpile
+                if (!t.def.EverStorable(false)) continue;
+                // don't count it if it *is* itself
+                if (t == thing) continue;
+                // skip things that cannot stack and have a different defName (depending on settings)
+                if ( !t.CanStackWith(thing) &&
+                     !(KanbanStockpile.Settings.considerDifferentMaterialSimilar && t.def.stackLimit == 1 && t.def.defName == thing.def.defName) ) continue;
+
+                // even a partial stack is a dupe so count it regardless of stackCount
+                numDuplicates++;
+                if (numDuplicates >= max) {
+                    return numDuplicates;
+                }
+            }
+
+            // if we got here we didn't hit the max count, so return what we did find
+            return numDuplicates;
+        }
+    }
+
+
 }
