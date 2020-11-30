@@ -220,7 +220,8 @@ namespace KanbanStockpile
                 r = reservations[i];
                 if (r == null) continue;
                 if (r.Job == null) continue;
-                if (!(r.Job.def == JobDefOf.HaulToCell || r.Job.def == JobDefOf.HaulToContainer)) continue;
+                KSLog.Message($"[KanbanStockpile] some reserved job has JobDefOf: {r.Job.def}");
+                if (!(r.Job.def == JobDefOf.HaulToCell || r.Job.def == JobDefOf.HaulToContainer || r.Job.def == PickUpAndHaulJobDefOf.HaulToInventory)) continue;
 
                 Thing t = r.Job.targetA.Thing;
                 if (t == null) continue;
@@ -233,7 +234,8 @@ namespace KanbanStockpile
                 if (r.Job.def == JobDefOf.HaulToCell) {
                     dest = r.Job.targetB.Cell;
                 } else {
-                    // case of JobDefOf.HaulToContainer
+                    // case of JobDefOf.HaulToContainer or PickUpAndHaulJobDefOf.HaulToInventory
+                    KSLog.Message($"[KanbanStockpile] INNER SANCTUM WITH JobDefOf: {r.Job.def}");
                     Thing container = r.Job.targetB.Thing;
                     if (container == null) continue;
                     dest = container.Position;
