@@ -184,7 +184,7 @@ namespace KanbanStockpile
                 IntVec3 cell = slotGroup.CellsList[j];
                 things = map.thingGrid.ThingsListAt(cell);
 
-                numDuplicates += KSUtil.CountSimilarStacks(things, thing, ks.ssl);
+                numDuplicates += KSUtil.CountSimilarStacks(things, thing, (ks.ssl - numDuplicates));
                 if (numDuplicates >= ks.ssl) {
                     KSLog.Message($"[KanbanStockpile] Don't haul thing {thing} as slotGroup {slotGroup} already contains at least {numDuplicates}!");
                     __result = false;
@@ -222,18 +222,24 @@ namespace KanbanStockpile
                 if (sg != slotGroup) continue; // skip it this hauling reservation is going to a different stockpile
 
                 List<Thing> reservedThings = new List<Thing>();
+                //FIXME this is gated by false right now
                 if (false && r.Job.def == PickUpAndHaulJobDefOf.HaulToInventory) {
-                    // peel off all the Things in the queue and assume they're all going to this slot group (or check targetQueueB)
+                    // peel off all the Things and Destinations in the queue and check them individually
                     for (int j = 0; j < r.Job.targetQueueA.Count; j++) {
                         Thing t = r.Job.targetQueueA[i].Thing;
                         if (t == null) continue;
-                        KSLog.Message($"[KanbanStockpile] [Aggressive] HaulToInventory thing in targetQueueA[{i}]: {t}!");
+                        IntVec3 qDest = r.Job.targetQueueB[i].Cell;
+                        if (qDest == null) continue;
+                        SlotGroup qSlotGroup = qDest.GetSlotGroup(map);
+                        if (qSlotGroup == null) continue;
+                        if (qSlotGroup != slotGroup) continue;
+                        KSLog.Message($"[KanbanStockpile] [Aggressive] HaulToInventory thing in targetQueueA[{i}]: {t} bound for {qSlotGroup}");
                         reservedThings.Add(t);
                     }
                 } else {
                     Thing t = r.Job.targetA.Thing;
                     if (t == null) continue;
-                    reservedThings.Add(r.Job.targetA.Thing);
+                    reservedThings.Add(t);
                 }
 
                 numDuplicates += KSUtil.CountSimilarStacks(reservedThings, thing, (ks.ssl - numDuplicates));
@@ -270,11 +276,33 @@ namespace KanbanStockpile
             harmony.Patch(originalMethod, null, new HarmonyMethod(typeof(PickUpAndHaul_WorkGiver_HaulToInventory_CapacityAt_Patch), "Postfix"));
         }
 
-        public static void Postfix(int __result, Thing thing, IntVec3 storeCell, Map map)
+        public static void Postfix(ref int __result, Thing thing, IntVec3 storeCell, Map map)
         {
+            // if there is no capacity left no need to limit it further
+            if(__result <= 0) return;
+
+            // make sure we have everything we need to continue
+            if(!storeCell.TryGetKanbanSettings(map, out var ks, out var slotGroup)) return;
+
+            // TODO Check Stack Refill Threshold
+            // Check Similar Stack Limit
+            int numDuplicates = 0;
+            if (ks.ssl != 0) {
+                for (int j = 0; j < slotGroup.CellsList.Count; j++) {
+                    IntVec3 cell = slotGroup.CellsList[j];
+                    List<Thing> things = map.thingGrid.ThingsListAt(cell);
+                    numDuplicates += KSUtil.CountSimilarStacks(things, thing, (ks.ssl - numDuplicates));
+                    if (numDuplicates >= ks.ssl) {
+                        KSLog.Message($"[KanbanStockpile] PUAH CapacityAt() Don't haul thing {thing} as slotGroup {slotGroup} already contains at least {numDuplicates}!");
+                        __result = 0;
+                        return;
+                    }
+                }
+                __result = Math.Min(__result, (ks.ssl - numDuplicates) * thing.def.stackLimit);
+            }
+            //__result = (ks.ssl - numDuplicates) * thing.def.stackLimit + (ks.srt / 100f) * thing.def.stackLimit;
+
             KSLog.Message($"[KanbanStockpile] PUAH CapacityAt() {__result}, {thing}, {storeCell}");
-            //if(__result == 0) return;
-            //__result = 0;
             return;
         }
     }
