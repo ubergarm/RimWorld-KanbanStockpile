@@ -17,6 +17,7 @@ namespace KanbanStockpile
     {
         public static bool IsLWMDeepStorageLoaded;
         public static bool IsStockpileRankingLoaded;
+        public static bool IsPickUpAndHaulLoaded;
 
         static KanbanStockpileLoader()
         {
@@ -39,6 +40,16 @@ namespace KanbanStockpile
                 Log.Message("[KanbanStockpile] Did *NOT* detect Uuugggg's StockpileRanking...");
             }
 
+            // Check for both the original and the re-uploaded one (which is basically the same)
+            if ( (ModLister.GetActiveModWithIdentifier("Mehni.PickUpAndHaul") != null) ||
+                 (ModLister.GetActiveModWithIdentifier("Mlie.PickUpAndHaul") != null) ) {
+                IsPickUpAndHaulLoaded = true;
+                Log.Message("[KanbanStockpile] Detected Mehni/Mlie PickUpAndHaul is loaded!");
+                PickUpAndHaul_WorkGiver_HaulToInventory_CapacityAt_Patch.ApplyPatch(harmony);
+            } else {
+                IsPickUpAndHaulLoaded = false;
+                Log.Message("[KanbanStockpile] Did *NOT* detect Mehni/Mlie PickUpAndHaul...");
+            }
 
             if (MP.enabled) {
                 //MP.RegisterAll();
@@ -86,9 +97,11 @@ namespace KanbanStockpile
         public static JobDef HaulToInventory;
     }
 
+    //********************
     // Utilities
-    // list of all stored things, the haulable thing in question, and max count before returning
 	public static class KSUtil {
+
+        // list of all stored things, the haulable thing in question, and max count before returning
         public static int CountSimilarStacks(List<Thing> things, Thing thing, int max) {
             int numDuplicates = 0;
             for (int i = 0; i < things.Count; i++) {
@@ -112,7 +125,22 @@ namespace KanbanStockpile
             // if we got here we didn't hit the max count, so return what we did find
             return numDuplicates;
         }
-    }
 
+        // credit to bananasss00 for this refactor
+        public static bool TryGetKanbanSettings(this IntVec3 cell, Map map, out KanbanSettings ks, out SlotGroup slotGroup)
+        {
+            ks = new KanbanSettings();
+            slotGroup = cell.GetSlotGroup(map);
+            if( slotGroup?.Settings == null ) return false;
+
+            // grab latest configs for this stockpile from our state manager
+            ks = State.Get(slotGroup.Settings.owner.ToString());
+
+            // skip all this stuff now if stockpile is not configured to use at least one feature
+            if (ks.srt == 100 && ks.ssl == 0) return false;
+
+            return true;
+        }
+    }
 
 }

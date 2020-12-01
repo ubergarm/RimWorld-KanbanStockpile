@@ -110,9 +110,8 @@ namespace KanbanStockpile
             tmp.ssl = (int)Widgets.HorizontalSlider(new Rect(155, rect.yMin + 10f, 125f, 15f),
                     ks.ssl, 0f, 8f, false, similarStackLimitLabel, null, null, 1f);
 
-
             if( (ks.srt != tmp.srt) ||
-                    (ks.ssl != tmp.ssl) ) {
+                (ks.ssl != tmp.ssl) ) {
 
                 // Accept slider changes no faster than 4Hz (250ms) to prevent spamming multiplayer sync lag
                 DateTime curTime = DateTime.Now;
@@ -146,15 +145,7 @@ namespace KanbanStockpile
             if (__result == false) return;
 
             // make sure we have everything we need to continue
-            SlotGroup slotGroup=c.GetSlotGroup(map);
-            if( (slotGroup == null) || (slotGroup.Settings == null) ) return;
-
-            // grab latest configs for this stockpile from our state manager
-            KanbanSettings ks;
-            ks = State.Get(slotGroup.Settings.owner.ToString());
-
-            // skip all this stuff now if stockpile is not configured to use at least one feature
-            if (ks.srt == 100 && ks.ssl == 0) return;
+            if(!c.TryGetKanbanSettings(map, out var ks, out var slotGroup)) return;
 
             // Assuming JobDefOf.HaulToContainer for Building_Storage vs JobDefOf.HaulToCell otherwise
             bool isContainer = (slotGroup?.parent is Building_Storage);
@@ -258,6 +249,35 @@ namespace KanbanStockpile
         }
     }
 
+    //********************
+    //PickUpAndHaul Patches
+    static class PickUpAndHaul_WorkGiver_HaulToInventory_CapacityAt_Patch
+    {
+        public static void ApplyPatch(Harmony harmony)
+        {
+            var originalType = AccessTools.TypeByName("PickUpAndHaul.WorkGiver_HaulToInventory");
+            if(originalType == null) {
+                Log.Message("[KanbanStockpile] ERROR: TypeByName. Unable to patch PUAH mod.");
+                return;
+            }
+            var originalMethod = AccessTools.Method(originalType, "CapacityAt");
+            if(originalMethod == null) {
+                Log.Message("[KanbanStockpile] ERROR: Method. Unable to patch PUAH mod.");
+                return;
+            }
+            Log.Message($"[KanbanStockpile] Patching Mehni/Mlie PickUpAndHaul mod!");
+            // apply a postfix patch manually at runtime using reflection to get PUAH details
+            harmony.Patch(originalMethod, null, new HarmonyMethod(typeof(PickUpAndHaul_WorkGiver_HaulToInventory_CapacityAt_Patch), "Postfix"));
+        }
+
+        public static void Postfix(int __result, Thing thing, IntVec3 storeCell, Map map)
+        {
+            KSLog.Message($"[KanbanStockpile] PUAH CapacityAt() {__result}, {thing}, {storeCell}");
+            //if(__result == 0) return;
+            //__result = 0;
+            return;
+        }
+    }
 
     //********************
     //StorageSettings Patches
