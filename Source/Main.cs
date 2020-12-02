@@ -29,7 +29,7 @@ namespace KanbanStockpile
                 Log.Message("[KanbanStockpile] Detected LWM Deep Storage is loaded!");
             } else {
                 IsLWMDeepStorageLoaded = false;
-                Log.Message("[KanbanStockpile] Did *NOT* detect LWM Deep Storage...");
+                KSLog.Message("[KanbanStockpile] Did *NOT* detect LWM Deep Storage...");
             }
 
             if (ModLister.GetActiveModWithIdentifier("Uuugggg.StockpileRanking") != null) {
@@ -37,18 +37,18 @@ namespace KanbanStockpile
                 Log.Message("[KanbanStockpile] Detected Uuugggg's StockpileRanking is loaded!");
             } else {
                 IsStockpileRankingLoaded = false;
-                Log.Message("[KanbanStockpile] Did *NOT* detect Uuugggg's StockpileRanking...");
+                KSLog.Message("[KanbanStockpile] Did *NOT* detect Uuugggg's StockpileRanking...");
             }
 
             // Check for both the original and the re-uploaded one (which is basically the same)
             if ( (ModLister.GetActiveModWithIdentifier("Mehni.PickUpAndHaul") != null) ||
                  (ModLister.GetActiveModWithIdentifier("Mlie.PickUpAndHaul") != null) ) {
                 IsPickUpAndHaulLoaded = true;
-                Log.Message("[KanbanStockpile] Detected Mehni/Mlie PickUpAndHaul is loaded!");
-                PickUpAndHaul_WorkGiver_HaulToInventory_CapacityAt_Patch.ApplyPatch(harmony);
+                Log.Message("[KanbanStockpile] Detected Mehni or Mlie PickUpAndHaul is loaded!");
+                PickUpAndHaul_WorkGiver_HaulToInventory_Patch.ApplyPatch(harmony);
             } else {
                 IsPickUpAndHaulLoaded = false;
-                Log.Message("[KanbanStockpile] Did *NOT* detect Mehni/Mlie PickUpAndHaul...");
+                KSLog.Message("[KanbanStockpile] Did *NOT* detect Mehni or Mlie PickUpAndHaul...");
             }
 
             if (MP.enabled) {
@@ -95,6 +95,19 @@ namespace KanbanStockpile
     {
         public static JobDef UnloadYourHauledInventory;
         public static JobDef HaulToInventory;
+    }
+
+    // Provide Commpatibility with PickUpAndHaul
+    public class CellAllocation
+    {
+        public Thing allocated;
+        public int capacity;
+
+        public CellAllocation(Thing a, int c)
+        {
+            allocated = a;
+            capacity = c;
+        }
     }
 
     //********************

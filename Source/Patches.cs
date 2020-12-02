@@ -186,7 +186,7 @@ namespace KanbanStockpile
 
                 numDuplicates += KSUtil.CountSimilarStacks(things, thing, (ks.ssl - numDuplicates));
                 if (numDuplicates >= ks.ssl) {
-                    KSLog.Message($"[KanbanStockpile] Don't haul thing {thing} as slotGroup {slotGroup} already contains at least {numDuplicates}!");
+                    KSLog.Message($"[KanbanStockpile] Don't haul {thing} as {slotGroup} already contains at least {numDuplicates} stacks!");
                     __result = false;
                     return;
                 }
@@ -257,26 +257,57 @@ namespace KanbanStockpile
 
     //********************
     //PickUpAndHaul Patches
-    static class PickUpAndHaul_WorkGiver_HaulToInventory_CapacityAt_Patch
+    static class PickUpAndHaul_WorkGiver_HaulToInventory_Patch
     {
+        // This keeps track of PUAH allocated things before they get reserved to prevent overhauling
+        public struct HaulToInventoryAllocatedThings
+        {
+            public Job job;
+            public List<Thing> things;
+        }
+        private static HaulToInventoryAllocatedThings AllocatedThings;
+
+        // apply patches manually at runtime using reflection to get PUAH types and methods
         public static void ApplyPatch(Harmony harmony)
         {
+            if(AllocatedThings.things == null) {
+                AllocatedThings.things = new List<Thing>();
+            }
+
             var originalType = AccessTools.TypeByName("PickUpAndHaul.WorkGiver_HaulToInventory");
             if(originalType == null) {
-                Log.Message("[KanbanStockpile] ERROR: TypeByName. Unable to patch PUAH mod.");
+                Log.Warning("[KanbanStockpile] ERROR: TypeByName. Unable to patch PUAH mod.");
                 return;
             }
-            var originalMethod = AccessTools.Method(originalType, "CapacityAt");
-            if(originalMethod == null) {
-                Log.Message("[KanbanStockpile] ERROR: Method. Unable to patch PUAH mod.");
+
+            var CapacityAtMethod = AccessTools.Method(originalType, "CapacityAt");
+            if(CapacityAtMethod == null) {
+                Log.Warning("[KanbanStockpile] ERROR: Unable to patch PUAH method CapacityAt");
                 return;
             }
+
+            var AllocateThingAtCellMethod = AccessTools.Method(originalType, "AllocateThingAtCell");
+            if(AllocateThingAtCellMethod == null) {
+                Log.Warning("[KanbanStockpile] ERROR: Unable to patch PUAH method AllocateThingAtCell");
+                return;
+            }
+
             Log.Message($"[KanbanStockpile] Patching Mehni/Mlie PickUpAndHaul mod!");
-            // apply a postfix patch manually at runtime using reflection to get PUAH details
-            harmony.Patch(originalMethod, null, new HarmonyMethod(typeof(PickUpAndHaul_WorkGiver_HaulToInventory_CapacityAt_Patch), "Postfix"));
+
+            // postfix patch
+            harmony.Patch(CapacityAtMethod,
+                          null,
+                          new HarmonyMethod(typeof(PickUpAndHaul_WorkGiver_HaulToInventory_Patch),
+                          "CapacityAtPostfix"));
+
+            // postfix patch
+            harmony.Patch(AllocateThingAtCellMethod,
+                          null,
+                          new HarmonyMethod(typeof(PickUpAndHaul_WorkGiver_HaulToInventory_Patch),
+                          "AllocateThingAtCellPostfix"));
         }
 
-        public static void Postfix(ref int __result, Thing thing, IntVec3 storeCell, Map map)
+        public static void CapacityAtPostfix(ref int __result, Thing thing, IntVec3 storeCell, Map map)
         {
             // if there is no capacity left no need to limit it further
             if(__result <= 0) return;
@@ -284,25 +315,48 @@ namespace KanbanStockpile
             // make sure we have everything we need to continue
             if(!storeCell.TryGetKanbanSettings(map, out var ks, out var slotGroup)) return;
 
-            // TODO Check Stack Refill Threshold
             // Check Similar Stack Limit
             int numDuplicates = 0;
-            if (ks.ssl != 0) {
+            if (ks.ssl >= 1) {
+
+                // to prevent overhauling to cell storage must also track unreserved yet allocated haulables
+                bool isContainer = (slotGroup?.parent is Building_Storage);
+
+                if (!isContainer) {
+                    numDuplicates += KSUtil.CountSimilarStacks(AllocatedThings.things, thing, (ks.ssl - numDuplicates));
+                }
+
                 for (int j = 0; j < slotGroup.CellsList.Count; j++) {
                     IntVec3 cell = slotGroup.CellsList[j];
                     List<Thing> things = map.thingGrid.ThingsListAt(cell);
                     numDuplicates += KSUtil.CountSimilarStacks(things, thing, (ks.ssl - numDuplicates));
                     if (numDuplicates >= ks.ssl) {
-                        KSLog.Message($"[KanbanStockpile] PUAH CapacityAt() Don't haul thing {thing} as slotGroup {slotGroup} already contains at least {numDuplicates}!");
+                        KSLog.Message($"[KanbanStockpile] PUAH CapacityAt() Don't haul {thing} as {slotGroup} already contains at least {numDuplicates} stacks!");
                         __result = 0;
                         return;
                     }
                 }
                 __result = Math.Min(__result, (ks.ssl - numDuplicates) * thing.def.stackLimit);
             }
+
+            // TODO Check Stack Refill Threshold
             //__result = (ks.ssl - numDuplicates) * thing.def.stackLimit + (ks.srt / 100f) * thing.def.stackLimit;
 
             KSLog.Message($"[KanbanStockpile] PUAH CapacityAt() {__result}, {thing}, {storeCell}");
+            return;
+        }
+
+        public static void AllocateThingAtCellPostfix(ref bool __result, Dictionary<IntVec3, CellAllocation> storeCellCapacity, Pawn pawn, Thing nextThing, Job job)
+        {
+            if (__result == true) {
+                if(AllocatedThings.job != job) {
+                    AllocatedThings.things.Clear();
+                    AllocatedThings.job = job;
+                    AllocatedThings.things.Add(nextThing);
+                }
+                KSLog.Message($"[KanbanStockpile] Inside AllocateThingAtCell {pawn?.Name}, {job?.targetQueueA?.ToStringSafeEnumerable()}");
+            }
+            //KSLog.Message($"[KanbanStockpile] Inside AllocateThingAtCell {__result}, {pawn?.Name}, {nextThing}, {job?.targetQueueA?.Count}");
             return;
         }
     }
