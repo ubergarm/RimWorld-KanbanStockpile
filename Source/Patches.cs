@@ -134,7 +134,6 @@ namespace KanbanStockpile
     [HarmonyPatch(typeof(StoreUtility), "NoStorageBlockersIn")]
     public class StoreUtility_NoStorageBlockersIn_Patch
     {
-        private static FieldInfo ReservationsListInfo = AccessTools.Field(typeof(ReservationManager), "reservations");
         public static void Postfix(ref bool __result, IntVec3 c, Map map, Thing thing)
         {
             // NOTE: Likely LWM Deep Storages Prefix() and Vanilla NoStorageBlockersIn() itself have already run
@@ -178,85 +177,23 @@ namespace KanbanStockpile
 
             if (ks.ssl == 0) return;
             int numDuplicates = 0;
-            // SimilarStackLimit check all cells in the slotgroup (potentially CPU intensive for big zones/limits)
-            // SlotGroup.HeldThings
-            for (int j = 0; j < slotGroup.CellsList.Count; j++) {
-                IntVec3 cell = slotGroup.CellsList[j];
-                things = map.thingGrid.ThingsListAt(cell);
 
-                numDuplicates += KSUtil.CountSimilarStacks(things, thing, (ks.ssl - numDuplicates));
-                if (numDuplicates >= ks.ssl) {
-                    KSLog.Message($"[KanbanStockpile] Don't haul {thing} as {slotGroup} already contains at least {numDuplicates} stacks!");
-                    __result = false;
-                    return;
-                }
+            // first check for duplicates already sitting there completely stored in stockpile
+            numDuplicates += KSUtil.CountStoredSimilarStacks(slotGroup, map, thing, (ks.ssl - numDuplicates));
+            if (numDuplicates >= ks.ssl) {
+                KSLog.Message($"[KanbanStockpile] Don't haul {thing} as {slotGroup} already contains at least {numDuplicates} stacks!");
+                __result = false;
+                return;
             }
 
-            // iterate over all outstanding reserved jobs to prevent hauling duplicate similar stacks
+            // optionally check reservations for any "in flight" hauling jobs to reduce redundant over-hauling
             if (KanbanStockpile.Settings.aggressiveSimilarStackChecking == false) return;
-            if (map.reservationManager == null) return;
-            var reservations = ReservationsListInfo.GetValue(map.reservationManager) as List<ReservationManager.Reservation>;
-            if (reservations == null) return;
-            ReservationManager.Reservation r;
-            for (int i = 0; i < reservations.Count; i++) {
-                r = reservations[i];
-                if (r == null) continue;
-                if (r.Job == null) continue;
-                if (!(r.Job.def == JobDefOf.HaulToCell ||
-                      r.Job.def == JobDefOf.HaulToContainer ||
-                      r.Job.def == PickUpAndHaulJobDefOf.HaulToInventory ||
-                      r.Job.def == PickUpAndHaulJobDefOf.UnloadYourHauledInventory)) continue;
 
-                if (r.Job.def == PickUpAndHaulJobDefOf.UnloadYourHauledInventory) {
-                    KSLog.Message($"[KanbanStockpile] FOUND RESERVED JOB {r.Job.def} on {r.Target.Thing} or {r.Job.targetA.Thing} going to {r.Job.targetB.Cell.GetSlotGroup(map).Settings.owner}");
-                }
-
-                IntVec3 dest;
-                if (r.Job.def == JobDefOf.HaulToCell || r.Job.def == PickUpAndHaulJobDefOf.HaulToInventory || r.Job.def == PickUpAndHaulJobDefOf.UnloadYourHauledInventory) {
-                    dest = r.Job.targetB.Cell;
-                } else  {
-                    // case JobDefOf.HaulToContainer
-                    Thing container = r.Job.targetB.Thing;
-                    if (container == null) continue;
-                    dest = container.Position;
-                }
-
-                if (dest == null) continue;
-                SlotGroup sg = dest.GetSlotGroup(map);
-                if (sg == null) continue;
-                if (sg != slotGroup) continue; // skip it this hauling reservation is going to a different stockpile
-
-                // KSLog.Message($"[KanbanStockpile] 3. FOUND RESERVED JOB for {r.Target.Thing} going to {r.Job?.targetB.Cell.GetSlotGroup(map).Settings.owner}");
-
-                List<Thing> reservedThings = new List<Thing>();
-                //FIXME this is gated by false right now
-                if (false && r.Job.def == PickUpAndHaulJobDefOf.HaulToInventory) {
-                    // peel off all the Things and Destinations in the queue and check them individually
-                    for (int j = 0; j < r.Job.targetQueueA.Count; j++) {
-                        Thing t = r.Job.targetQueueA[i].Thing;
-                        if (t == null) continue;
-                        IntVec3 qDest = r.Job.targetQueueB[i].Cell;
-                        if (qDest == null) continue;
-                        SlotGroup qSlotGroup = qDest.GetSlotGroup(map);
-                        if (qSlotGroup == null) continue;
-                        if (qSlotGroup != slotGroup) continue;
-                        KSLog.Message($"[KanbanStockpile] [Aggressive] HaulToInventory thing in targetQueueA[{i}]: {t} bound for {qSlotGroup}");
-                        reservedThings.Add(t);
-                    }
-                } else {
-                    // Thing t = r.Job.targetA.Thing;
-                    Thing t = r.Target.Thing;
-                    //if (t == null) t = r.Job.targetA.Thing;
-                    if (t == null) continue;
-                    reservedThings.Add(t);
-                }
-
-                numDuplicates += KSUtil.CountSimilarStacks(reservedThings, thing, (ks.ssl - numDuplicates));
-                if (numDuplicates >= ks.ssl) {
-                    KSLog.Message($"[KanbanStockpile] [Aggressive] Don't haul thing {thing} as slotGroup {slotGroup} already contains at least {numDuplicates}!");
-                    __result = false;
-                    return;
-                }
+            numDuplicates += KSUtil.CountReservedSimilarStacks(slotGroup, map, thing, (ks.ssl - numDuplicates));
+            if (numDuplicates >= ks.ssl) {
+                KSLog.Message($"[KanbanStockpile] [Aggressive] Don't haul {thing} as {slotGroup} already contains at least {numDuplicates} stacks!");
+                __result = false;
+                return;
             }
 
             // if we get here, haul that thing!
@@ -313,33 +250,28 @@ namespace KanbanStockpile
             if(!storeCell.TryGetKanbanSettings(map, out var ks, out var slotGroup)) return;
 
             // Check Similar Stack Limit
-            int numDuplicates = 0;
             if (ks.ssl >= 1) {
 
-                // to prevent overhauling to cell storage must also track unreserved yet allocated haulables
-                //bool isContainer = (slotGroup?.parent is Building_Storage);
-                //if (!isContainer) {
-                //    numDuplicates += KSUtil.CountSimilarStacks(AllocatedThings.things, thing, (ks.ssl - numDuplicates));
-                //}
-
-                for (int j = 0; j < slotGroup.CellsList.Count; j++) {
-                    IntVec3 cell = slotGroup.CellsList[j];
-                    List<Thing> things = map.thingGrid.ThingsListAt(cell);
-                    numDuplicates += KSUtil.CountSimilarStacks(things, thing, (ks.ssl - numDuplicates));
-                    if (numDuplicates >= ks.ssl) {
-                        KSLog.Message($"[KanbanStockpile] PUAH CapacityAt() Don't haul {thing} as {slotGroup} already contains at least {numDuplicates} stacks!");
-                        __result = 0;
-                        return;
-                    }
+                // prevent overhauling to cell storage when ssl enabled by falling back to vanilla HaulToCell job
+                bool isContainer = (slotGroup?.parent is Building_Storage);
+                if (!isContainer) {
+                    __result = 0;
+                    KSLog.Message($"[KanbanStockpile] PUAH CapacityAt() Forcing cell storage to 0: {__result}, {thing}, {storeCell}");
+                    return;
                 }
-                __result = Math.Min(__result, (ks.ssl - numDuplicates) * thing.def.stackLimit);
-                //if (__result < 0) __result = 0;
+
+                int numDuplicates = 0;
+                // first check for duplicates already sitting there completely stored in stockpile
+                numDuplicates += KSUtil.CountStoredSimilarStacks(slotGroup, map, thing, (ks.ssl - numDuplicates));
+                // optionally check reservations for any "in flight" hauling jobs to reduce redundant over-hauling
+                if (KanbanStockpile.Settings.aggressiveSimilarStackChecking == true) {
+                    numDuplicates += KSUtil.CountReservedSimilarStacks(slotGroup, map, thing, (ks.ssl - numDuplicates));
+                }
+
+                __result = Math.Min(__result, (((ks.ssl - numDuplicates) * thing.def.stackLimit) / slotGroup.CellsList.Count));
+                KSLog.Message($"[KanbanStockpile] PUAH CapacityAt() {__result}, {thing}, {storeCell}");
             }
 
-            // TODO Check Stack Refill Threshold
-            //__result = (ks.ssl - numDuplicates) * thing.def.stackLimit + (ks.srt / 100f) * thing.def.stackLimit;
-
-            KSLog.Message($"[KanbanStockpile] PUAH CapacityAt() {__result}, {thing}, {storeCell}");
             return;
         }
 
@@ -348,11 +280,8 @@ namespace KanbanStockpile
             // place the reservation as soon as thing is allocated instead of waiting for job driver to kick off
             if (__result == true) {
                 LocalTargetInfo haulable = new LocalTargetInfo(nextThing);
-                var res = pawn.Reserve(haulable, job);
-                KSLog.Message($"[KanbanStockpile] AllocateThingAtCellPostfix() Reserving Thing {__result}, {pawn?.Name}, {nextThing}, {job?.targetQueueA?.Count} going to {job?.targetB.Cell.GetSlotGroup(pawn.Map).Settings.owner} Reserve() return val: {res}");
-                //LocalTargetInfo haulable = new LocalTargetInfo(job?.targetQueueA[job.targetQueueA.Count].Thing);
-                //KSLog.Message($"[KanbanStockpile] AllocateThingAtCellPostfix() Reserving Thing {__result}, {pawn?.Name}, {nextThing}, {job.targetQueueA[job.targetQueueA.Count]} going to {job?.targetB.Cell.GetSlotGroup(pawn.Map).Settings.owner} Reserve() return val: {res}");
-
+                bool res = pawn.Reserve(haulable, job);
+                //KSLog.Message($"[KanbanStockpile] AllocateThingAtCellPostfix() Reserving Thing {__result}, {pawn?.Name}, {nextThing}, {job?.targetQueueA?.Count} going to {job?.targetB.Cell.GetSlotGroup(pawn.Map).Settings.owner} Reserve() return val: {res}");
             }
             return;
         }

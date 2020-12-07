@@ -9,6 +9,7 @@ using RimWorld;
 using HarmonyLib;
 using Multiplayer.API;
 using Verse;
+using Verse.AI;
 
 namespace KanbanStockpile
 {
@@ -114,32 +115,7 @@ namespace KanbanStockpile
     // Utilities
 	public static class KSUtil {
 
-        // list of all stored things, the haulable thing in question, and max count before returning
-        public static int CountSimilarStacks(List<Thing> things, Thing thing, int max) {
-            int numDuplicates = 0;
-            for (int i = 0; i < things.Count; i++) {
-                Thing t = things[i];
-                if (t == null) continue;
-                // don't count non-storable things as they aren't actually *in* the stockpile
-                if (!t.def.EverStorable(false)) continue;
-                // don't count it if it *is* itself
-                if (t == thing) continue;
-                // skip things that cannot stack and have a different defName (depending on settings)
-                if ( !t.CanStackWith(thing) &&
-                     !(KanbanStockpile.Settings.considerDifferentMaterialSimilar && t.def.stackLimit == 1 && t.def.defName == thing.def.defName) ) continue;
-
-                // even a partial stack is a dupe so count it regardless of stackCount
-                numDuplicates++;
-                if (numDuplicates >= max) {
-                    return numDuplicates;
-                }
-            }
-
-            // if we got here we didn't hit the max count, so return what we did find
-            return numDuplicates;
-        }
-
-        // credit to bananasss00 for this refactor
+        // credit to bananasss00 for this function
         public static bool TryGetKanbanSettings(this IntVec3 cell, Map map, out KanbanSettings ks, out SlotGroup slotGroup)
         {
             ks = new KanbanSettings();
@@ -154,6 +130,92 @@ namespace KanbanStockpile
 
             return true;
         }
-    }
 
+        // stored thing, haulable thing
+        public static bool IsSimilarStack(Thing t, Thing thing) {
+            // sanity check
+            if (t == null || thing == null) return false;
+            // don't count non-storable things as they aren't actually *in* the stockpile
+            if (!t.def.EverStorable(false)) return false;
+            // don't count it if it *is* itself
+            if (t == thing) return false;
+            // skip things that cannot stack and have a different defName (depending on settings)
+            if ( !t.CanStackWith(thing) &&
+                 !(KanbanStockpile.Settings.considerDifferentMaterialSimilar && t.def.stackLimit == 1 && t.def.defName == thing.def.defName) ) return false;
+
+            // even a partial stack is a dupe so count it regardless of stackCount
+            return true;
+        }
+
+        // destination slotgroup, map, the haulable thing in question, and max count before returning
+        public static int CountStoredSimilarStacks(SlotGroup slotGroup, Map map, Thing thing, int max) {
+            int numDuplicates = 0;
+
+            for (int i = 0; i < slotGroup.CellsList.Count; i++) {
+                IntVec3 cell = slotGroup.CellsList[i];
+                List<Thing> things = map.thingGrid.ThingsListAt(cell);
+
+                for (int j = 0; j < things.Count; j++) {
+                    Thing t = things[j];
+
+                    if (!IsSimilarStack(t, thing)) continue;
+
+                    numDuplicates++;
+                    if (numDuplicates >= max) {
+                        return numDuplicates;
+                    }
+                }
+            }
+
+            // if we got here we didn't hit the max count, so return what we did find
+            return numDuplicates;
+        }
+
+        private static FieldInfo ReservationsListInfo = AccessTools.Field(typeof(ReservationManager), "reservations");
+        public static int CountReservedSimilarStacks(SlotGroup slotGroup, Map map, Thing thing, int max) {
+            int numDuplicates = 0;
+
+            if (map.reservationManager == null) return 0;
+            var reservations = ReservationsListInfo.GetValue(map.reservationManager) as List<ReservationManager.Reservation>;
+            if (reservations == null) return 0;
+
+            ReservationManager.Reservation r;
+            for (int i = 0; i < reservations.Count; i++) {
+                r = reservations[i];
+                if (r == null) continue;
+                if (r.Job == null) continue;
+                if (!(r.Job.def == JobDefOf.HaulToCell ||
+                      r.Job.def == JobDefOf.HaulToContainer ||
+                      r.Job.def == PickUpAndHaulJobDefOf.HaulToInventory ||
+                      r.Job.def == PickUpAndHaulJobDefOf.UnloadYourHauledInventory)) continue;
+
+                IntVec3 dest;
+                if (r.Job.def == JobDefOf.HaulToCell || r.Job.def == PickUpAndHaulJobDefOf.HaulToInventory || r.Job.def == PickUpAndHaulJobDefOf.UnloadYourHauledInventory) {
+                    dest = r.Job.targetB.Cell;
+                } else  {
+                    // case JobDefOf.HaulToContainer
+                    Thing container = r.Job.targetB.Thing;
+                    if (container == null) continue;
+                    dest = container.Position;
+                }
+
+                if (dest == null) continue;
+                SlotGroup sg = dest.GetSlotGroup(map);
+                if (sg == null) continue;
+                if (sg != slotGroup) continue; // skip it this hauling reservation is going to a different stockpile
+
+                Thing t = r.Target.Thing;
+
+                if (!IsSimilarStack(t, thing)) continue;
+
+                numDuplicates++;
+                if (numDuplicates >= max) {
+                    return numDuplicates;
+                }
+            }
+
+            return numDuplicates;
+        }
+
+    }
 }
