@@ -90,27 +90,6 @@ namespace KanbanStockpile
         }
     }
 
-    // Provide Compatibility with PickUpAndHaul
-    [DefOf]
-    public static class PickUpAndHaulJobDefOf
-    {
-        public static JobDef UnloadYourHauledInventory;
-        public static JobDef HaulToInventory;
-    }
-
-    // Provide Commpatibility with PickUpAndHaul
-    public class CellAllocation
-    {
-        public Thing allocated;
-        public int capacity;
-
-        public CellAllocation(Thing a, int c)
-        {
-            allocated = a;
-            capacity = c;
-        }
-    }
-
     //********************
     // Utilities
 	public static class KSUtil {
@@ -171,6 +150,34 @@ namespace KanbanStockpile
             return numDuplicates;
         }
 
+        public static bool TryGetHaulingDestination(this Job job, out Map map, out IntVec3 dest, out SlotGroup slotGroup)
+        {
+            map = null;
+            slotGroup = null;
+            dest = new IntVec3();
+
+            if (job == null) return false;
+
+            if (job.def == JobDefOf.HaulToContainer) {
+                Thing container = job.targetB.Thing;
+                if (container == null) return false;
+                map = container.Map;
+                dest = container.Position;
+            } else  {
+                // case JobDefOf.HaulToCell
+                dest = job.targetB.Cell;
+                map = job.targetA.Thing.Map;
+            }
+
+            if (map == null) return false;
+            if (dest == null) return false;
+
+            slotGroup = dest.GetSlotGroup(map);
+            if (slotGroup == null) return false;
+
+            return true;
+        }
+
         private static FieldInfo ReservationsListInfo = AccessTools.Field(typeof(ReservationManager), "reservations");
         public static int CountReservedSimilarStacks(SlotGroup slotGroup, Map map, Thing thing, int max) {
             int numDuplicates = 0;
@@ -185,22 +192,10 @@ namespace KanbanStockpile
                 if (r == null) continue;
                 if (r.Job == null) continue;
                 if (!(r.Job.def == JobDefOf.HaulToCell ||
-                      r.Job.def == JobDefOf.HaulToContainer ||
-                      r.Job.def == PickUpAndHaulJobDefOf.HaulToInventory ||
-                      r.Job.def == PickUpAndHaulJobDefOf.UnloadYourHauledInventory)) continue;
+                      r.Job.def == JobDefOf.HaulToContainer) ) continue;
 
-                IntVec3 dest;
-                if (r.Job.def == JobDefOf.HaulToCell || r.Job.def == PickUpAndHaulJobDefOf.HaulToInventory || r.Job.def == PickUpAndHaulJobDefOf.UnloadYourHauledInventory) {
-                    dest = r.Job.targetB.Cell;
-                } else  {
-                    // case JobDefOf.HaulToContainer
-                    Thing container = r.Job.targetB.Thing;
-                    if (container == null) continue;
-                    dest = container.Position;
-                }
+                if (!r.Job.TryGetHaulingDestination(out Map unusedMap, out IntVec3 unusedDest, out SlotGroup sg)) continue;
 
-                if (dest == null) continue;
-                SlotGroup sg = dest.GetSlotGroup(map);
                 if (sg == null) continue;
                 if (sg != slotGroup) continue; // skip it this hauling reservation is going to a different stockpile
 
@@ -214,8 +209,8 @@ namespace KanbanStockpile
                 }
             }
 
+            // if we got here we didn't hit the max count, so return what we did find
             return numDuplicates;
         }
-
     }
 }

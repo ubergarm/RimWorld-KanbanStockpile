@@ -147,7 +147,9 @@ namespace KanbanStockpile
             if(!c.TryGetKanbanSettings(map, out var ks, out var slotGroup)) return;
 
             // Assuming JobDefOf.HaulToContainer for Building_Storage vs JobDefOf.HaulToCell otherwise
+            // FIXME forced this to false to test
             bool isContainer = (slotGroup?.parent is Building_Storage);
+            isContainer = false;
 
             // StackRefillThreshold checks only here at cell c
             List<Thing> things = map.thingGrid.ThingsListAt(c);
@@ -201,6 +203,32 @@ namespace KanbanStockpile
         }
     }
 
+
+
+    //********************
+    //HaulAIUtility Patches
+    [HarmonyPatch(typeof(HaulAIUtility), nameof(HaulAIUtility.HaulToStorageJob))]
+    public class HaulAIUtility_HaulToStorageJob_Patch
+    {
+        public static void Postfix(ref Job __result, Pawn p, Thing t)
+        {
+            if (__result == null) return;
+
+            if (!__result.TryGetHaulingDestination(out Map map, out IntVec3 dest, out SlotGroup sg)) return;
+
+            // make sure we have everything we need to continue
+            if(!dest.TryGetKanbanSettings(t.Map, out var ks, out var slotGroup)) return;
+
+            // Check Similar Stack Limit
+            if (ks.ssl == 0) return;
+
+            // TODO finish this
+            // if (t.stackCount > (t.def.stackLimit * ks.srt / 100f)) continue; // no need to refill until count is below threshold
+            // (((t.stackCount + thing.stackCount) <= t.def.stackLimit)) {
+            KSLog.Message($"[KanbanStockpile] HaulToStorageJob Postfix() {p} hauling {__result.count}x {t} going to {map} {dest} {sg}");
+        }
+    }
+
     //********************
     //PickUpAndHaul Patches
     static class PickUpAndHaul_WorkGiver_HaulToInventory_Patch
@@ -220,12 +248,6 @@ namespace KanbanStockpile
                 return;
             }
 
-            var AllocateThingAtCellMethod = AccessTools.Method(originalType, "AllocateThingAtCell");
-            if(AllocateThingAtCellMethod == null) {
-                Log.Warning("[KanbanStockpile] ERROR: Unable to patch PUAH method AllocateThingAtCell");
-                return;
-            }
-
             Log.Message($"[KanbanStockpile] Patching Mehni/Mlie PickUpAndHaul mod!");
 
             // postfix patch
@@ -234,11 +256,6 @@ namespace KanbanStockpile
                           new HarmonyMethod(typeof(PickUpAndHaul_WorkGiver_HaulToInventory_Patch),
                           "CapacityAtPostfix"));
 
-            // postfix patch
-            harmony.Patch(AllocateThingAtCellMethod,
-                          null,
-                          new HarmonyMethod(typeof(PickUpAndHaul_WorkGiver_HaulToInventory_Patch),
-                          "AllocateThingAtCellPostfix"));
         }
 
         public static void CapacityAtPostfix(ref int __result, Thing thing, IntVec3 storeCell, Map map)
@@ -250,41 +267,13 @@ namespace KanbanStockpile
             if(!storeCell.TryGetKanbanSettings(map, out var ks, out var slotGroup)) return;
 
             // Check Similar Stack Limit
-            if (ks.ssl >= 1) {
+            if (ks.ssl == 0) return;
 
-                // prevent overhauling to cell storage when ssl enabled by falling back to vanilla HaulToCell job
-                bool isContainer = (slotGroup?.parent is Building_Storage);
-                if (!isContainer) {
-                    __result = 0;
-                    KSLog.Message($"[KanbanStockpile] PUAH CapacityAt() Forcing cell storage to 0: {__result}, {thing}, {storeCell}");
-                    return;
-                }
-
-                int numDuplicates = 0;
-                // first check for duplicates already sitting there completely stored in stockpile
-                numDuplicates += KSUtil.CountStoredSimilarStacks(slotGroup, map, thing, (ks.ssl - numDuplicates));
-                // optionally check reservations for any "in flight" hauling jobs to reduce redundant over-hauling
-                if (KanbanStockpile.Settings.aggressiveSimilarStackChecking == true) {
-                    numDuplicates += KSUtil.CountReservedSimilarStacks(slotGroup, map, thing, (ks.ssl - numDuplicates));
-                }
-
-                __result = Math.Min(__result, (((ks.ssl - numDuplicates) * thing.def.stackLimit) / slotGroup.CellsList.Count));
-                KSLog.Message($"[KanbanStockpile] PUAH CapacityAt() {__result}, {thing}, {storeCell}");
-            }
-
+            // PUAH doesn't do reservations correctly: fall back to vanilla hauling to avoid redundant overhauling if ssl enabled
+            __result = 0;
             return;
         }
 
-        public static void AllocateThingAtCellPostfix(ref bool __result, Dictionary<IntVec3, CellAllocation> storeCellCapacity, Pawn pawn, Thing nextThing, Job job)
-        {
-            // place the reservation as soon as thing is allocated instead of waiting for job driver to kick off
-            if (__result == true) {
-                LocalTargetInfo haulable = new LocalTargetInfo(nextThing);
-                bool res = pawn.Reserve(haulable, job);
-                //KSLog.Message($"[KanbanStockpile] AllocateThingAtCellPostfix() Reserving Thing {__result}, {pawn?.Name}, {nextThing}, {job?.targetQueueA?.Count} going to {job?.targetB.Cell.GetSlotGroup(pawn.Map).Settings.owner} Reserve() return val: {res}");
-            }
-            return;
-        }
     }
 
     //********************
