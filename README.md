@@ -12,12 +12,6 @@ stockpiles and deep storage inspired by kanban logistic control systems.
 and it won't trigger hauling jobs for any specific stack until there
 are less than or equal to 2 meals left in it (meal stack size is 10).
 
-*Note*: This feature works in building/deep storage stockpiles, however colonists
-will only refill partial stacks using an existing partial stack that can
-fit. They aren't smart enough to break up a full stack into one small
-enough to fit perfectly in building/deep storage.  *(they are smart enough to
-do this for a regular vanilla stockpile however)*
-
 #### Similar Stack Limit
 * No more than `Similar Stack Limit` stacks of a thing are allowed in the stockpile.
 * Defaults to `OFF` which gives the same behavior as vanilla.
@@ -42,17 +36,22 @@ until it has been completely used up.
 * Uses `for` loops similar to vanilla style code for basic `C#` optimization
 * Skips hot code paths anytime a stockpile is set to default values
 * Avoid using high values of `Similar Stack Limit` in large stockpiles as it must scan every thing in every cell
-* Turn off `Aggressive Similar Stockpile Limiting` in Settings if you have an older CPU or large colony with many reserved hauling jobs to scan
+* Turn off `Reserved Similar Stockpile Limiting` in Settings if you have an older CPU or large colony with many reserved hauling jobs to scan
 
 ## Compatible Mods
 * [LWM's Deep Storage](https://steamcommunity.com/sharedfiles/filedetails/?id=1617282896) - Little White Mouse
 * [KV RimFridge](https://steamcommunity.com/sharedfiles/filedetails/?id=1180721235) - Kiame Vivacity / Vendan / et al
 * [Stockpile Ranking](https://steamcommunity.com/sharedfiles/filedetails/?id=1558464886) - Uuugggg (AlexTD)
 * [Simple Search Bar](https://steamcommunity.com/sharedfiles/filedetails/?id=1827546987) - Gguake
+* [Carry Capacity Fixed](https://steamcommunity.com/sharedfiles/filedetails/?id=1906760965) - Smash Phil / Dr Zhivago
+* [Ogre Stack](https://steamcommunity.com/sharedfiles/filedetails/?id=1447140290) - Ogre
+* [PickUpAndHaul](https://steamcommunity.com/sharedfiles/filedetails/?id=1279012058) - Mehni
 
 Please comment below with results if you test this mod with your own favorite storage mods, thanks!
 
 ## Credits
+Thanks to bananasss00 for contributing code from their github fork that I was unable to directly merge.
+
 Original idea and inspiration came from my failed attempt to multiplayer patch Satisfied Storage.
 * [SatisfiedStorage](https://steamcommunity.com/sharedfiles/filedetails/?id=2003354028) - hoop
 * [Hauling Hysteresis](https://steamcommunity.com/sharedfiles/filedetails/?id=784324350) - Vendan

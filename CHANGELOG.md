@@ -1,3 +1,10 @@
+## v1.0.5
+- #9 Add setting to limit non-stackable items made from different materials
+- #10 Patch HaulToStorageJob to properly break a stack when refilling anywhere
+- #11 Add setting to patch PUAH to prevent redundant/overhauling
+- Fix bug where newly constructed storage did not have correct default values - credits bananasss00
+- Renamed some Settings and updated default values and tooltips for best user experience
+
 ## v1.0.4
 - Remove dependency on IHoldMultipleThings.dll when detecting building/deep storage vs cell storage stockpiles
 

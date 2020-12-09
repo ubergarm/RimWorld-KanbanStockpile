@@ -1,0 +1,17 @@
+﻿<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<Manifest>
+  <identifier>net.ubergarm.rimworld.mods.kanbanstockpile</identifier>
+  <version>1.0.5</version>
+  <targetVersions>
+  </targetVersions>
+  <dependencies>
+  </dependencies>
+  <incompatibleWith>
+  </incompatibleWith>
+  <loadBefore>
+  </loadBefore>
+  <loadAfter>
+  </loadAfter>
+  <manifestUri>https://raw.githubusercontent.com/ubergarm/RimWorld-KanbanStockpile/master/About/Manifest.xml</manifestUri>
+  <downloadUri>https://github.com/ubergarm/RimWorld-KanbanStockpile/releases/latest</downloadUri>
+</Manifest>
