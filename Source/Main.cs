@@ -167,7 +167,7 @@ namespace KanbanStockpile
                 if (t.stackCount > (t.def.stackLimit * srt / 100f)) continue; // no need to refill until count is below threshold
 
                 numDesired = t.def.stackLimit - t.stackCount;
-                return true;
+                if(numDesired > 0) return true;
             }
             return false;
         }
