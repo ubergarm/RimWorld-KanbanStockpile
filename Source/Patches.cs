@@ -147,7 +147,7 @@ namespace KanbanStockpile
             if(!c.TryGetKanbanSettings(map, out var ks, out var slotGroup)) return;
 
             // Check Stack Refill Threshold
-            if (ks.srt < 100 && c.TryGetStackRefillThresholdDesired(slotGroup, map, thing, ks.srt, out int numDesired)) {
+            if (ks.srt > 0 && c.TryGetStackRefillThresholdDesired(slotGroup, map, thing, ks.srt, out int numDesired)) {
                 //KSLog.Message($"[KanbanStockpile] DO haul {thing} as {slotGroup} wants exactly {numDesired} units!");
                 __result = true;
                 return;
@@ -169,13 +169,12 @@ namespace KanbanStockpile
 
             numDuplicates += KSUtil.CountReservedSimilarStacks(slotGroup, map, thing, (ks.ssl - numDuplicates));
             if (numDuplicates >= ks.ssl) {
-                KSLog.Message($"[KanbanStockpile] [Aggressive] Don't haul {thing} as {slotGroup} already contains at least {numDuplicates} stacks!");
+                //KSLog.Message($"[KanbanStockpile] [Aggressive] Don't haul {thing} as {slotGroup} already contains at least {numDuplicates} stacks!");
                 __result = false;
                 return;
             }
 
             // if we get here, haul that thing!
-            //KSLog.Message($"[KanbanStockpile] DO haul {thing} to {slotGroup} location {c}!");
             return;
         }
     }
@@ -198,18 +197,9 @@ namespace KanbanStockpile
             if(!dest.TryGetKanbanSettings(t.Map, out var ks, out var slotGroup)) return;
 
             // Check Stack Refill Threshold
-            if (ks.srt < 100 && dest.TryGetStackRefillThresholdDesired(slotGroup, map, t, ks.srt, out int numDesired)) {
+            if (ks.srt > 0 && dest.TryGetStackRefillThresholdDesired(slotGroup, map, t, ks.srt, out int numDesired)) {
                 __result.count = Math.Min(__result.count, numDesired);
             }
-
-            // Check Similar Stack Limit
-            //if (ks.ssl == 0) return;
-
-            //int numDuplicates = 0;
-            //numDuplicates += KSUtil.CountStoredSimilarStacks(slotGroup, map, t, (ks.ssl - numDuplicates));
-            //numDuplicates += KSUtil.CountReservedSimilarStacks(slotGroup, map, t, (ks.ssl - numDuplicates));
-
-            //__result.count = Math.Min(__result.count, (ks.ssl - numDuplicates) * t.def.stackLimit);
 
             KSLog.Message($"[KanbanStockpile] HaulToStorageJob Postfix() {p} hauling {__result.count}x {t} going to {map} {dest} {sg}");
             return;
@@ -253,11 +243,10 @@ namespace KanbanStockpile
             // make sure we have everything we need to continue
             if(!storeCell.TryGetKanbanSettings(map, out var ks, out var slotGroup)) return;
 
-            // Check Similar Stack Limit
-            if (ks.ssl == 0) return;
-
             // PUAH doesn't do reservations correctly: fall back to vanilla hauling to avoid redundant overhauling if ssl enabled
+            if (ks.ssl == 0) return;
             __result = 0;
+
             return;
         }
 
