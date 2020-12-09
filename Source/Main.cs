@@ -46,7 +46,9 @@ namespace KanbanStockpile
                  (ModLister.GetActiveModWithIdentifier("Mlie.PickUpAndHaul") != null) ) {
                 IsPickUpAndHaulLoaded = true;
                 Log.Message("[KanbanStockpile] Detected Mehni or Mlie PickUpAndHaul is loaded!");
-                PickUpAndHaul_WorkGiver_HaulToInventory_Patch.ApplyPatch(harmony);
+                if(KanbanStockpile.Settings.PreventPickUpAndHaulOverHauling) {
+                    PickUpAndHaul_WorkGiver_HaulToInventory_Patch.ApplyPatch(harmony);
+                }
             } else {
                 IsPickUpAndHaulLoaded = false;
                 KSLog.Message("[KanbanStockpile] Did *NOT* detect Mehni or Mlie PickUpAndHaul...");

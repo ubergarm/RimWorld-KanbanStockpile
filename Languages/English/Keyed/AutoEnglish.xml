@@ -4,7 +4,9 @@
     <KS.SimilarStackLimit>SimilarStackLimit {0}</KS.SimilarStackLimit>
     <KS.SimilarStackLimitOff>SimilarStackLimit OFF</KS.SimilarStackLimitOff>
     <KS.ReservedSimilarStackChecking>Reserved Similar Stack Checking</KS.ReservedSimilarStackChecking>
-    <KS.ReservedSimilarStackCheckingTip>If enabled, this scans reserved hauling jobs for similar stacks to reduce redundant hauling. If you have a slow CPU or a very large colony it is recommended to disable this. Default: Enabled.</KS.ReservedSimilarStackCheckingTip>
+    <KS.ReservedSimilarStackCheckingTip>If enabled, this scans reserved hauling jobs for similar stacks to reduce redundant hauling. If you have a slow CPU or a very large colony you may disable this to gain a little performance, but will then see overhauling. Default: Enabled.</KS.ReservedSimilarStackCheckingTip>
     <KS.ConsiderDifferentMaterialSimilar>Consider Different Material Non-Stackables Similar</KS.ConsiderDifferentMaterialSimilar>
     <KS.ConsiderDifferentMaterialSimilarTip>If enabled, this considers say bowler hats made from different material to be similar for the purpose of Similar Stack Limit. NOTE: This only applies to non-stackable items like apparel and weapons, so it does *not* apply to various stacks of different meat. Default: Enabled</KS.ConsiderDifferentMaterialSimilarTip>
+    <KS.PreventPickUpAndHaulOverHauling>Prevent PickUpAndHaul OverHauling</KS.PreventPickUpAndHaulOverHauling>
+    <KS.PreventPickUpAndHaulOverHaulingTip>If enabled and PUAH mod detected, all hauling jobs going to a stockpile with Similar Stack Limit enabled will fallback to vanilla HaulToStorage jobs to prevent overhauling. PUAH does not do reservations properly so this is the best solution for now and recommended enabled for best experience. NOTE: Restart required to pickup this config if changed. Default: Enabled</KS.PreventPickUpAndHaulOverHaulingTip>
 </LanguageData>
