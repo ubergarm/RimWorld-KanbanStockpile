@@ -120,7 +120,7 @@ namespace KanbanStockpile
             if (t == thing) return false;
             // skip things that cannot stack and have a different defName (depending on settings)
             if ( !t.CanStackWith(thing) &&
-                 !(KanbanStockpile.Settings.considerDifferentMaterialSimilar && t.def.stackLimit == 1 && t.def.defName == thing.def.defName) ) return false;
+                 !(KanbanStockpile.Settings.ConsiderDifferentMaterialSimilar && t.def.stackLimit == 1 && t.def.defName == thing.def.defName) ) return false;
 
             // even a partial stack is a dupe so count it regardless of stackCount
             return true;

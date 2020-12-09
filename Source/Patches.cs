@@ -165,11 +165,11 @@ namespace KanbanStockpile
             }
 
             // optionally check reservations for any "in flight" hauling jobs to reduce redundant over-hauling
-            if (KanbanStockpile.Settings.aggressiveSimilarStackChecking == false) return;
+            if (KanbanStockpile.Settings.ReservedSimilarStackChecking == false) return;
 
             numDuplicates += KSUtil.CountReservedSimilarStacks(slotGroup, map, thing, (ks.ssl - numDuplicates));
             if (numDuplicates >= ks.ssl) {
-                //KSLog.Message($"[KanbanStockpile] [Aggressive] Don't haul {thing} as {slotGroup} already contains at least {numDuplicates} stacks!");
+                //KSLog.Message($"[KanbanStockpile] [Reserved] Don't haul {thing} as {slotGroup} already contains at least {numDuplicates} stacks!");
                 __result = false;
                 return;
             }

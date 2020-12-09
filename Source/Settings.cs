@@ -6,14 +6,14 @@ namespace KanbanStockpile
 {
     public class KanbanStockpileSettings : ModSettings
     {
-        public bool aggressiveSimilarStackChecking = true;
-        public bool considerDifferentMaterialSimilar = true;
+        public bool ReservedSimilarStackChecking = true;
+        public bool ConsiderDifferentMaterialSimilar = true;
 
         public override void ExposeData()
         {
             base.ExposeData();
-            Scribe_Values.Look(ref aggressiveSimilarStackChecking, "aggressiveSimilarStackChecking", true, true);
-            Scribe_Values.Look(ref considerDifferentMaterialSimilar, "considerDifferentMaterialSimilar", true, true);
+            Scribe_Values.Look(ref ReservedSimilarStackChecking, "ReservedSimilarStackChecking", true, true);
+            Scribe_Values.Look(ref ConsiderDifferentMaterialSimilar, "ConsiderDifferentMaterialSimilar", true, true);
         }
 
         public static void DoWindowContents(Rect canvas)
@@ -23,12 +23,12 @@ namespace KanbanStockpile
             list.Begin(canvas);
             list.Gap(4);
 
-            list.CheckboxLabeled("KS.AggressiveSimilarStackChecking".Translate(),
-                                 ref KanbanStockpile.Settings.aggressiveSimilarStackChecking,
-                                 "KS.AggressiveSimilarStackCheckingTip".Translate());
+            list.CheckboxLabeled("KS.ReservedSimilarStackChecking".Translate(),
+                                 ref KanbanStockpile.Settings.ReservedSimilarStackChecking,
+                                 "KS.ReservedSimilarStackCheckingTip".Translate());
 
             list.CheckboxLabeled("KS.ConsiderDifferentMaterialSimilar".Translate(),
-                                 ref KanbanStockpile.Settings.considerDifferentMaterialSimilar,
+                                 ref KanbanStockpile.Settings.ConsiderDifferentMaterialSimilar,
                                  "KS.ConsiderDifferentMaterialSimilarTip".Translate());
 
             list.End();

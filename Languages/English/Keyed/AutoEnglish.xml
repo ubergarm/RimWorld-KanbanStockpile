@@ -3,8 +3,8 @@
     <KS.StackRefillThreshold>StackRefillThreshold {0}%</KS.StackRefillThreshold>
     <KS.SimilarStackLimit>SimilarStackLimit {0}</KS.SimilarStackLimit>
     <KS.SimilarStackLimitOff>SimilarStackLimit OFF</KS.SimilarStackLimitOff>
-    <KS.AggressiveSimilarStackChecking>Aggressive Similar Stack Checking</KS.AggressiveSimilarStackChecking>
-    <KS.AggressiveSimilarStackCheckingTip>If enabled, this scans reserved hauling jobs for similar stacks to reduce redundant hauling. If you have a slow CPU or a very large colony it is recommended to disable this. Default: Enabled.</KS.AggressiveSimilarStackCheckingTip>
+    <KS.ReservedSimilarStackChecking>Reserved Similar Stack Checking</KS.ReservedSimilarStackChecking>
+    <KS.ReservedSimilarStackCheckingTip>If enabled, this scans reserved hauling jobs for similar stacks to reduce redundant hauling. If you have a slow CPU or a very large colony it is recommended to disable this. Default: Enabled.</KS.ReservedSimilarStackCheckingTip>
     <KS.ConsiderDifferentMaterialSimilar>Consider Different Material Non-Stackables Similar</KS.ConsiderDifferentMaterialSimilar>
     <KS.ConsiderDifferentMaterialSimilarTip>If enabled, this considers say bowler hats made from different material to be similar for the purpose of Similar Stack Limit. NOTE: This only applies to non-stackable items like apparel and weapons, so it does *not* apply to various stacks of different meat. Default: Enabled</KS.ConsiderDifferentMaterialSimilarTip>
 </LanguageData>
