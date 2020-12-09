@@ -150,12 +150,33 @@ namespace KanbanStockpile
             return numDuplicates;
         }
 
+        // checks all existing stacks at c and if one needs refilled numDesired is exactly how many
+        // return false on error or when numDesired set to 0
+        // returns true on success and sets numDesired to actual number
+        public static bool TryGetStackRefillThresholdDesired(this IntVec3 cell, SlotGroup slotGroup, Map map, Thing thing, int srt, out int numDesired)
+        {
+            numDesired = 0;
+
+            List<Thing> things = map.thingGrid.ThingsListAt(cell);
+            for (int i = 0; i < things.Count; i++) {
+                Thing t = things[i];
+                if (!t.def.EverStorable(false)) continue; // skip non-storable things as they aren't actually *in* the stockpile
+                if (!t.CanStackWith(thing)) continue; // skip it if it cannot stack with thing to haul
+                if (t.stackCount > (t.def.stackLimit * srt / 100f)) continue; // no need to refill until count is below threshold
+
+                numDesired = t.def.stackLimit - t.stackCount;
+                return true;
+            }
+            return false;
+        }
+
         public static bool TryGetHaulingDestination(this Job job, out Map map, out IntVec3 dest, out SlotGroup slotGroup)
         {
             map = null;
             slotGroup = null;
             dest = new IntVec3();
 
+            // Could print warnings here, hopefully these don't fail silently
             if (job == null) return false;
 
             if (job.def == JobDefOf.HaulToContainer) {
@@ -166,7 +187,8 @@ namespace KanbanStockpile
             } else  {
                 // case JobDefOf.HaulToCell
                 dest = job.targetB.Cell;
-                map = job.targetA.Thing.Map;
+                map = job.targetA.Thing.Map ?? job.targetA.Thing.MapHeld;
+
             }
 
             if (map == null) return false;
@@ -182,6 +204,7 @@ namespace KanbanStockpile
         public static int CountReservedSimilarStacks(SlotGroup slotGroup, Map map, Thing thing, int max) {
             int numDuplicates = 0;
 
+            // Could print warnings here, hopefully these don't fail silently
             if (map.reservationManager == null) return 0;
             var reservations = ReservationsListInfo.GetValue(map.reservationManager) as List<ReservationManager.Reservation>;
             if (reservations == null) return 0;
@@ -199,7 +222,7 @@ namespace KanbanStockpile
                 if (sg == null) continue;
                 if (sg != slotGroup) continue; // skip it this hauling reservation is going to a different stockpile
 
-                Thing t = r.Target.Thing;
+                Thing t = r.Job.targetA.Thing;
 
                 if (!IsSimilarStack(t, thing)) continue;
 

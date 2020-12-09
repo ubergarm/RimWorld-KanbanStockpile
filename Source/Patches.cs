@@ -146,35 +146,11 @@ namespace KanbanStockpile
             // make sure we have everything we need to continue
             if(!c.TryGetKanbanSettings(map, out var ks, out var slotGroup)) return;
 
-            // Assuming JobDefOf.HaulToContainer for Building_Storage vs JobDefOf.HaulToCell otherwise
-            // FIXME forced this to false to test
-            bool isContainer = (slotGroup?.parent is Building_Storage);
-            isContainer = false;
-
-            // StackRefillThreshold checks only here at cell c
-            List<Thing> things = map.thingGrid.ThingsListAt(c);
-            // TODO #5 consider re-ordering to prevent refilling an accidental/leftover duplicate stack
-            // Design Decision: use for loops instead of foreach as they may be faster and similar to this vanilla function
-            for (int i = 0; i < things.Count; i++) {
-                Thing t = things[i];
-                if (!t.def.EverStorable(false)) continue; // skip non-storable things as they aren't actually *in* the stockpile
-                if (!t.CanStackWith(thing)) continue; // skip it if it cannot stack with thing to haul
-                if (t.stackCount > (t.def.stackLimit * ks.srt / 100f)) continue; // no need to refill until count is below threshold
-
-                if (!isContainer) {
-                    // pawns are smart enough to grab a partial stack for vanilla cell stockpiles so no need to explicitly check here
-                    // maybe this is a JobDefOf.HaulToCell job?
-                    KSLog.Message($"[KanbanStockpile] YES haul {thing} to {slotGroup} to topoff {t} {t.stackCount} in cell stockpile!");
-                    __result = true;
-                    return;
-                } else if (((t.stackCount + thing.stackCount) <= t.def.stackLimit)) {
-                    // pawns seem to try to haul a full stack no matter what for HaulToContainer unlike HaulToCell CurJobDef's
-                    // so for here when trying to haul to deep storage explicitly ensure stack to haul is partial stack
-                    // maybe this is a JobDefOf.HaulToContainer job?
-                    KSLog.Message($"[KanbanStockpile] YES haul {thing} to {slotGroup} to topoff {t} {t.stackCount} in building storage stockpile!");
-                    __result = true;
-                    return;
-                }
+            // Check Stack Refill Threshold
+            if (ks.srt < 100 && c.TryGetStackRefillThresholdDesired(slotGroup, map, thing, ks.srt, out int numDesired)) {
+                //KSLog.Message($"[KanbanStockpile] DO haul {thing} as {slotGroup} wants exactly {numDesired} units!");
+                __result = true;
+                return;
             }
 
             if (ks.ssl == 0) return;
@@ -183,7 +159,7 @@ namespace KanbanStockpile
             // first check for duplicates already sitting there completely stored in stockpile
             numDuplicates += KSUtil.CountStoredSimilarStacks(slotGroup, map, thing, (ks.ssl - numDuplicates));
             if (numDuplicates >= ks.ssl) {
-                KSLog.Message($"[KanbanStockpile] Don't haul {thing} as {slotGroup} already contains at least {numDuplicates} stacks!");
+                //KSLog.Message($"[KanbanStockpile] Don't haul {thing} as {slotGroup} already contains at least {numDuplicates} stacks!");
                 __result = false;
                 return;
             }
@@ -199,6 +175,7 @@ namespace KanbanStockpile
             }
 
             // if we get here, haul that thing!
+            //KSLog.Message($"[KanbanStockpile] DO haul {thing} to {slotGroup} location {c}!");
             return;
         }
     }
@@ -214,18 +191,28 @@ namespace KanbanStockpile
         {
             if (__result == null) return;
 
+            // figure out where this hauling job is going
             if (!__result.TryGetHaulingDestination(out Map map, out IntVec3 dest, out SlotGroup sg)) return;
 
             // make sure we have everything we need to continue
             if(!dest.TryGetKanbanSettings(t.Map, out var ks, out var slotGroup)) return;
 
-            // Check Similar Stack Limit
-            if (ks.ssl == 0) return;
+            // Check Stack Refill Threshold
+            if (ks.srt < 100 && dest.TryGetStackRefillThresholdDesired(slotGroup, map, t, ks.srt, out int numDesired)) {
+                __result.count = Math.Min(__result.count, numDesired);
+            }
 
-            // TODO finish this
-            // if (t.stackCount > (t.def.stackLimit * ks.srt / 100f)) continue; // no need to refill until count is below threshold
-            // (((t.stackCount + thing.stackCount) <= t.def.stackLimit)) {
+            // Check Similar Stack Limit
+            //if (ks.ssl == 0) return;
+
+            //int numDuplicates = 0;
+            //numDuplicates += KSUtil.CountStoredSimilarStacks(slotGroup, map, t, (ks.ssl - numDuplicates));
+            //numDuplicates += KSUtil.CountReservedSimilarStacks(slotGroup, map, t, (ks.ssl - numDuplicates));
+
+            //__result.count = Math.Min(__result.count, (ks.ssl - numDuplicates) * t.def.stackLimit);
+
             KSLog.Message($"[KanbanStockpile] HaulToStorageJob Postfix() {p} hauling {__result.count}x {t} going to {map} {dest} {sg}");
+            return;
         }
     }
 
