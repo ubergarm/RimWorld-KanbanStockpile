@@ -60,11 +60,6 @@ namespace KanbanStockpile
         {
             sync.Bind(ref ks.srt);
             sync.Bind(ref ks.ssl);
-            //if (sync.isWriting) {
-            //    sync.Write(ks);
-            //} else {
-            //    ks = sync.Read<KanbanSettings>();
-            //}
         }
     }
 }

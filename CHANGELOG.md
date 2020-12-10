@@ -1,3 +1,6 @@
+## v1.0.6
+- #12 Stack Refill Threshold works properly now even when not using Similar Stack Limit
+
 ## v1.0.5
 - #9 Add setting to limit non-stackable items made from different materials
 - #10 Patch HaulToStorageJob to properly break a stack when refilling anywhere

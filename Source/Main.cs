@@ -55,7 +55,6 @@ namespace KanbanStockpile
             }
 
             if (MP.enabled) {
-                //MP.RegisterAll();
                 MP.RegisterSyncMethod(typeof(State), nameof(State.Set));
                 MP.RegisterSyncMethod(typeof(State), nameof(State.Del));
                 MP.RegisterSyncWorker<KanbanSettings>(State.SyncKanbanSettings, typeof(KanbanSettings), false, false);
@@ -153,23 +152,37 @@ namespace KanbanStockpile
         }
 
         // checks all existing stacks at c and if one needs refilled numDesired is exactly how many
-        // return false on error or when numDesired set to 0
-        // returns true on success and sets numDesired to actual number
+        // return false on error or if no matching stacks
+        // returns true on success and sets numDesired (even if it is 0)
         public static bool TryGetStackRefillThresholdDesired(this IntVec3 cell, SlotGroup slotGroup, Map map, Thing thing, int srt, out int numDesired)
         {
             numDesired = 0;
+            Thing lowestQtyThing = null;
 
             List<Thing> things = map.thingGrid.ThingsListAt(cell);
             for (int i = 0; i < things.Count; i++) {
                 Thing t = things[i];
                 if (!t.def.EverStorable(false)) continue; // skip non-storable things as they aren't actually *in* the stockpile
                 if (!t.CanStackWith(thing)) continue; // skip it if it cannot stack with thing to haul
-                if (t.stackCount > (t.def.stackLimit * srt / 100f)) continue; // no need to refill until count is below threshold
 
-                numDesired = t.def.stackLimit - t.stackCount;
-                if(numDesired > 0) return true;
+                // at this point we have a similar stack so save it here and search the rest of things
+                // and only work on the similar stack that has the lowest count (in case there are say 3x stacks in one cell)
+                // which will refill the lowest stacks first then continue to the highest stacks in the cell
+                if (lowestQtyThing == null)
+                    lowestQtyThing = t;
+                else if (t.stackCount < lowestQtyThing.stackCount)
+                    lowestQtyThing = t;
             }
-            return false;
+
+            // didn't find anything with similar stacks
+            if (lowestQtyThing == null) return false;
+
+            // we have at least one similar stack, so figure out if it wants anything or not
+            if (lowestQtyThing.stackCount > (lowestQtyThing.def.stackLimit * srt / 100f))
+                numDesired = 0;
+            else
+                numDesired = (lowestQtyThing.def.stackLimit - lowestQtyThing.stackCount);
+            return true;
         }
 
         public static bool TryGetHaulingDestination(this Job job, out Map map, out IntVec3 dest, out SlotGroup slotGroup)

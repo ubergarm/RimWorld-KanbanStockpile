@@ -120,7 +120,7 @@ namespace KanbanStockpile
                 }
                 lastUpdateTime = curTime;
 
-                KSLog.Message("[KanbanStockpile] Changed Stack Refill Threshold for settings with haulDestination named: " + settings.owner.ToString());
+                //KSLog.Message("[KanbanStockpile] Changed Stack Refill Threshold for settings with haulDestination named: " + settings.owner.ToString());
                 ks.srt = tmp.srt;
                 ks.ssl = tmp.ssl;
                 State.Set(settings.owner.ToString(), ks);
@@ -147,9 +147,12 @@ namespace KanbanStockpile
             if(!c.TryGetKanbanSettings(map, out var ks, out var slotGroup)) return;
 
             // Check Stack Refill Threshold
-            if (ks.srt > 0 && c.TryGetStackRefillThresholdDesired(slotGroup, map, thing, ks.srt, out int numDesired)) {
-                //KSLog.Message($"[KanbanStockpile] DO haul {thing} as {slotGroup} wants exactly {numDesired} units!");
-                __result = true;
+            if (c.TryGetStackRefillThresholdDesired(slotGroup, map, thing, ks.srt, out int numDesired)) {
+                //KSLog.Message($"[KanbanStockpile] haulable {thing} going to {slotGroup} wants exactly {numDesired} units!");
+                if (numDesired > 0)
+                    __result = true;
+                else
+                    __result = false;
                 return;
             }
 
@@ -197,11 +200,14 @@ namespace KanbanStockpile
             if(!dest.TryGetKanbanSettings(t.Map, out var ks, out var slotGroup)) return;
 
             // Check Stack Refill Threshold
-            if (ks.srt > 0 && dest.TryGetStackRefillThresholdDesired(slotGroup, map, t, ks.srt, out int numDesired)) {
+            if (dest.TryGetStackRefillThresholdDesired(slotGroup, map, t, ks.srt, out int numDesired)) {
                 __result.count = Math.Min(__result.count, numDesired);
             }
 
-            KSLog.Message($"[KanbanStockpile] HaulToStorageJob Postfix() {p} hauling {__result.count}x {t} going to {map} {dest} {sg}");
+            //KSLog.Message($"[KanbanStockpile] HaulToStorageJob Postfix() {p} hauling {__result.count}x {t} going to {map} {dest} {sg}");
+            // cancel this haul if it turns out the stockpile wants 0
+            if(__result.count <= 0) __result = null;
+
             return;
         }
     }
@@ -243,8 +249,8 @@ namespace KanbanStockpile
             // make sure we have everything we need to continue
             if(!storeCell.TryGetKanbanSettings(map, out var ks, out var slotGroup)) return;
 
-            // PUAH doesn't do reservations correctly: fall back to vanilla hauling to avoid redundant overhauling if ssl enabled
-            if (ks.ssl == 0) return;
+            // PUAH doesn't do reservations correctly: fall back to vanilla hauling to avoid redundant overhauling if srt/ssl enabled
+            if (ks.srt == 100 && ks.ssl == 0) return;
             __result = 0;
 
             return;
