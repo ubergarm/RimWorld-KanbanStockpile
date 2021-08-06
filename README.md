@@ -84,7 +84,7 @@ If you play Minecraft check out my magic themed sky island modpack
 
 ## Keywords
 ```
-#rimworld #rimworld 1.2 #rimworld mod #rimworld mods #rimworld mods 1.2
+#rimworld #rimworld 1.3 #rimworld mod #rimworld mods #rimworld mods 1.3
 #kanban #kanbanstockpile #kanban stockpile #kanbanstockpiles #storage settings
 #kanban stockpiles #kanbanstorage #kanban storage #SatisfiedStorage
 #VarietyMattersStockpile #rimworld search agency #hauling hysteresis

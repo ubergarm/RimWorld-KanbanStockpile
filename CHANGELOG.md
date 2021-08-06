@@ -1,3 +1,6 @@
+## v1.0.7
+- #13 Just add version tags for Rimworld 1.3 with no code changes prepping for updates.
+
 ## v1.0.6
 - #12 Stack Refill Threshold works properly now even when not using Similar Stack Limit
 
