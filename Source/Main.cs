@@ -99,6 +99,10 @@ namespace KanbanStockpile
         public static bool TryGetKanbanSettings(this IntVec3 cell, Map map, out KanbanSettings ks, out SlotGroup slotGroup)
         {
             ks = new KanbanSettings();
+            slotGroup = null;
+
+            if (map == null) return false;
+
             slotGroup = cell.GetSlotGroup(map);
             if( slotGroup?.Settings == null ) return false;
 

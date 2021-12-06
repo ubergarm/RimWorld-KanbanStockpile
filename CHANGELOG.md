@@ -1,3 +1,8 @@
+## v1.0.8
+- #16 Add NULL check for map in case thing is coming from inventory etc
+- Recompile against `0Harmony.dll` sha1sum `54a9eba73d266f1f475a6ff017d2cabd21986120`
+- Recompile against `0MultiplayerAPI.dll` sha1sum `a1b16bdf024407ee22cfc01978c931ff149db9a1`
+
 ## v1.0.7
 - #13 Just add version tags for Rimworld 1.3 with no code changes prepping for updates.
 
