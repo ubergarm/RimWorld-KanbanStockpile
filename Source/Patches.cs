@@ -20,7 +20,7 @@ namespace KanbanStockpile
     static class ITab_Storage_TopAreaHeight_Patch
     {
         //private float TopAreaHeight
-        public const float extraHeight = 28f;
+        public const float extraHeight = 56f; //move top of tab 28f
         public static void Postfix(ref float __result)
         {
             __result += extraHeight;
@@ -30,6 +30,10 @@ namespace KanbanStockpile
     [HarmonyPatch(typeof(ITab_Storage), "FillTab")]
     static class ITab_Storage_FillTab_Patch
     {
+        //buffer string for max stack size
+        private static string mssBuffer = "";
+        private static int prevTab;
+
         //protected override void FillTab()
         static MethodInfo GetTopAreaHeight = AccessTools.Property(typeof(ITab_Storage), "TopAreaHeight").GetGetMethod(true);
         public static IEnumerable<CodeInstruction> Transpiler(IEnumerable<CodeInstruction> instructions)
@@ -92,6 +96,13 @@ namespace KanbanStockpile
             ks = State.Get(settings.owner.ToString());
             tmp.srt = ks.srt;
             tmp.ssl = ks.ssl;
+            tmp.mss = ks.mss;
+
+            //remember current tab and change buffer on new tab
+            if (prevTab != haulDestination.GetHashCode()) {
+                prevTab = haulDestination.GetHashCode();
+                mssBuffer = (ks.mss > 0) ? ks.mss.ToString() : "";
+            }
 
             string stackRefillThresholdLabel = "KS.StackRefillThreshold".Translate(ks.srt);
 
@@ -104,14 +115,31 @@ namespace KanbanStockpile
 
             //Stack Refill Threshold Slider
             tmp.srt = (int)Widgets.HorizontalSlider(new Rect(0f, rect.yMin + 10f, 150f, 15f),
-                    ks.srt, 0f, 100f, false, stackRefillThresholdLabel, null, null, 1f);
+                    ks.srt, 0f, 100f, false, stackRefillThresholdLabel, null, null, 5f);
 
             //Similar Stack Limit Slider
             tmp.ssl = (int)Widgets.HorizontalSlider(new Rect(155, rect.yMin + 10f, 125f, 15f),
                     ks.ssl, 0f, 8f, false, similarStackLimitLabel, null, null, 1f);
 
-            if( (ks.srt != tmp.srt) ||
-                (ks.ssl != tmp.ssl) ) {
+            //Max Stack Size Box and Check
+            bool checkOn = tmp.mss > 0;
+            Widgets.CheckboxLabeled(new Rect(0f, rect.yMax - 25f, 280f, 20f).LeftHalf(), "Stack Size", ref checkOn);
+			if (checkOn)
+			{
+				Widgets.TextFieldNumeric(
+					new Rect(0f, rect.yMax - 25f, 280f, 20f).RightHalf(),
+					ref tmp.mss,
+					ref mssBuffer,
+					1f);
+			}
+			else
+			{
+				tmp.mss = 0;
+			}
+
+            if ( (ks.srt != tmp.srt) ||
+                (ks.ssl != tmp.ssl) ||
+                (ks.mss != tmp.mss)) {
 
                 // Accept slider changes no faster than 4Hz (250ms) to prevent spamming multiplayer sync lag
                 // (only apply this debounce if multiplayer mod is loaded)
@@ -126,6 +154,7 @@ namespace KanbanStockpile
                 //KSLog.Message("[KanbanStockpile] Changed Stack Refill Threshold for settings with haulDestination named: " + settings.owner.ToString());
                 ks.srt = tmp.srt;
                 ks.ssl = tmp.ssl;
+                ks.mss = tmp.mss;
                 State.Set(settings.owner.ToString(), ks);
             }
         }
@@ -150,7 +179,7 @@ namespace KanbanStockpile
             if(!c.TryGetKanbanSettings(map, out var ks, out var slotGroup)) return;
 
             // Check Stack Refill Threshold
-            if (c.TryGetStackRefillThresholdDesired(slotGroup, map, thing, ks.srt, out int numDesired)) {
+            if (c.TryGetStackRefillThresholdDesired(slotGroup, map, thing, ks, out int numDesired)) {
                 //KSLog.Message($"[KanbanStockpile] haulable {thing} going to {slotGroup} wants exactly {numDesired} units!");
                 if (numDesired > 0)
                     __result = true;
@@ -163,7 +192,7 @@ namespace KanbanStockpile
             int numDuplicates = 0;
 
             // first check for duplicates already sitting there completely stored in stockpile
-            numDuplicates += KSUtil.CountStoredSimilarStacks(slotGroup, map, thing, (ks.ssl - numDuplicates));
+            numDuplicates += KSUtil.CountStoredSimilarStacks(slotGroup, map, thing, (ks.ssl - numDuplicates), ks);
             if (numDuplicates >= ks.ssl) {
                 //KSLog.Message($"[KanbanStockpile] Don't haul {thing} as {slotGroup} already contains at least {numDuplicates} stacks!");
                 __result = false;
@@ -173,7 +202,7 @@ namespace KanbanStockpile
             // optionally check reservations for any "in flight" hauling jobs to reduce redundant over-hauling
             if (KanbanStockpile.Settings.ReservedSimilarStackChecking == false) return;
 
-            numDuplicates += KSUtil.CountReservedSimilarStacks(slotGroup, map, thing, (ks.ssl - numDuplicates));
+            numDuplicates += KSUtil.CountReservedSimilarStacks(slotGroup, map, thing, (ks.ssl - numDuplicates), ks);
             if (numDuplicates >= ks.ssl) {
                 //KSLog.Message($"[KanbanStockpile] [Reserved] Don't haul {thing} as {slotGroup} already contains at least {numDuplicates} stacks!");
                 __result = false;
@@ -203,13 +232,17 @@ namespace KanbanStockpile
             if(!dest.TryGetKanbanSettings(t.Map, out var ks, out var slotGroup)) return;
 
             // Check Stack Refill Threshold
-            if (dest.TryGetStackRefillThresholdDesired(slotGroup, map, t, ks.srt, out int numDesired)) {
+            if (dest.TryGetStackRefillThresholdDesired(slotGroup, map, t, ks, out int numDesired)) {
                 __result.count = Math.Min(__result.count, numDesired);
             }
 
-            //KSLog.Message($"[KanbanStockpile] HaulToStorageJob Postfix() {p} hauling {__result.count}x {t} going to {map} {dest} {sg}");
+            // limit haul ammount to max stack size if max stack size is greater than zero
+            int stackLimit = (ks.mss > 0) ? Math.Min(t.def.stackLimit, ks.mss) : t.def.stackLimit;
+            __result.count = Math.Min(__result.count, stackLimit);
+
+            //KSLog.Message($"[KanbanStockpile] HaulToStorageJob Postfix() {p} hauling {__result.count}x {t} going to {map} {dest} {sg} with max stack size {ks.mss}");
             // cancel this haul if it turns out the stockpile wants 0
-            if(__result.count <= 0) __result = null;
+            if (__result.count <= 0) __result = null;
 
             return;
         }
@@ -252,8 +285,8 @@ namespace KanbanStockpile
             // make sure we have everything we need to continue
             if(!storeCell.TryGetKanbanSettings(map, out var ks, out var slotGroup)) return;
 
-            // PUAH doesn't do reservations correctly: fall back to vanilla hauling to avoid redundant overhauling if srt/ssl enabled
-            if (ks.srt == 100 && ks.ssl == 0) return;
+            // PUAH doesn't do reservations correctly: fall back to vanilla hauling to avoid redundant overhauling if srt/ssl/mss enabled
+            if (ks.srt == 100 && ks.ssl == 0 && ks.mss == 0) return;
             __result = 0;
 
             return;
@@ -278,12 +311,14 @@ namespace KanbanStockpile
                 // this mode implicitly takes the value currently in srt and saves it out
                 Scribe_Values.Look(ref ks.srt, "stackRefillThreshold", 100, true);
                 Scribe_Values.Look(ref ks.ssl, "similarStackLimit", 0, true);
+                Scribe_Values.Look(ref ks.mss, "maxStackSize", 0, true);
             }
             else if (Scribe.mode == LoadSaveMode.LoadingVars)
             {
                 // this mode implicitly loads some other value into this instance of srt
                 Scribe_Values.Look(ref ks.srt, "stackRefillThreshold", 100, false);
                 Scribe_Values.Look(ref ks.ssl, "similarStackLimit", 0, false);
+                Scribe_Values.Look(ref ks.mss, "maxStackSize", 0, false);
                 State.Set(label, ks);
             }
         }

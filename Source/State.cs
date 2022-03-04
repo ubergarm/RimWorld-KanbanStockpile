@@ -18,12 +18,14 @@ namespace KanbanStockpile
     {
         public int srt; // stack refill threshold [0,100]
         public int ssl; // similar stack limit [0,8] (higher values in big stockpiles will eat CPU)
+        public int mss; // maximum stack size feature [0,...]
     }
 
     static class State
     {
         private static int defaultStackRefillThreshold = 100;
         private static int defaultSimilarStackLimit = 0;
+        private static int defaultMaxStackSize = 0;
 
         // key is a string from Verse.Zone.label (or pass in "___clipboard" as clipboard's owner is null)
         // val is an int whole number in range [0,100]
@@ -40,6 +42,7 @@ namespace KanbanStockpile
             KanbanSettings result;
             result.srt = defaultStackRefillThreshold;
             result.ssl = defaultSimilarStackLimit;
+            result.mss = defaultMaxStackSize;
             return result;
         }
 
@@ -60,6 +63,7 @@ namespace KanbanStockpile
         {
             sync.Bind(ref ks.srt);
             sync.Bind(ref ks.ssl);
+            sync.Bind(ref ks.mss);
         }
     }
 }

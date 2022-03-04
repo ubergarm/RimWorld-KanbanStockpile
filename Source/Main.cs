@@ -110,7 +110,7 @@ namespace KanbanStockpile
             ks = State.Get(slotGroup.Settings.owner.ToString());
 
             // skip all this stuff now if stockpile is not configured to use at least one feature
-            if (ks.srt == 100 && ks.ssl == 0) return false;
+            if (ks.srt == 100 && ks.ssl == 0 && ks.mss == 0) return false;
 
             return true;
         }
@@ -132,9 +132,9 @@ namespace KanbanStockpile
         }
 
         // destination slotgroup, map, the haulable thing in question, and max count before returning
-        public static int CountStoredSimilarStacks(SlotGroup slotGroup, Map map, Thing thing, int max) {
+        public static int CountStoredSimilarStacks(SlotGroup slotGroup, Map map, Thing thing, int max, KanbanSettings ks = default) {
             int numDuplicates = 0;
-
+            
             for (int i = 0; i < slotGroup.CellsList.Count; i++) {
                 IntVec3 cell = slotGroup.CellsList[i];
                 List<Thing> things = map.thingGrid.ThingsListAt(cell);
@@ -143,8 +143,10 @@ namespace KanbanStockpile
                     Thing t = things[j];
 
                     if (!IsSimilarStack(t, thing)) continue;
-
-                    numDuplicates++;
+                    
+                    //prf compat if one stack adds up to multiple max stack sizes add as multiple stacks
+                    if (ks.mss > 0) numDuplicates += (int)Math.Ceiling((decimal)t.stackCount / ks.mss);
+                    else numDuplicates++;
                     if (numDuplicates >= max) {
                         return numDuplicates;
                     }
@@ -158,7 +160,7 @@ namespace KanbanStockpile
         // checks all existing stacks at c and if one needs refilled numDesired is exactly how many
         // return false on error or if no matching stacks
         // returns true on success and sets numDesired (even if it is 0)
-        public static bool TryGetStackRefillThresholdDesired(this IntVec3 cell, SlotGroup slotGroup, Map map, Thing thing, int srt, out int numDesired)
+        public static bool TryGetStackRefillThresholdDesired(this IntVec3 cell, SlotGroup slotGroup, Map map, Thing thing, KanbanSettings ks, out int numDesired)
         {
             numDesired = 0;
             Thing lowestQtyThing = null;
@@ -181,11 +183,14 @@ namespace KanbanStockpile
             // didn't find anything with similar stacks
             if (lowestQtyThing == null) return false;
 
+            //stack limit for lowest quantaty thing
+            int stackLimit = (ks.mss > 0) ? System.Math.Min(lowestQtyThing.def.stackLimit, ks.mss) : lowestQtyThing.def.stackLimit;
+
             // we have at least one similar stack, so figure out if it wants anything or not
-            if (lowestQtyThing.stackCount > (lowestQtyThing.def.stackLimit * srt / 100f))
+            if (lowestQtyThing.stackCount > (stackLimit * ks.srt / 100f))
                 numDesired = 0;
             else
-                numDesired = (lowestQtyThing.def.stackLimit - lowestQtyThing.stackCount);
+                numDesired = (stackLimit - lowestQtyThing.stackCount);
             return true;
         }
 
@@ -220,7 +225,7 @@ namespace KanbanStockpile
         }
 
         private static FieldInfo ReservationsListInfo = AccessTools.Field(typeof(ReservationManager), "reservations");
-        public static int CountReservedSimilarStacks(SlotGroup slotGroup, Map map, Thing thing, int max) {
+        public static int CountReservedSimilarStacks(SlotGroup slotGroup, Map map, Thing thing, int max, KanbanSettings ks = default) {
             int numDuplicates = 0;
 
             // Could print warnings here, hopefully these don't fail silently
@@ -245,7 +250,10 @@ namespace KanbanStockpile
 
                 if (!IsSimilarStack(t, thing)) continue;
 
-                numDuplicates++;
+                //prf compat if one stack adds up to multiple max stack sizes add as multiple stacks
+                if (ks.mss > 0) numDuplicates += (int)Math.Ceiling((decimal)t.stackCount / ks.mss);
+                else numDuplicates++;
+
                 if (numDuplicates >= max) {
                     return numDuplicates;
                 }
