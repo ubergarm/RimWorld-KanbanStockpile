@@ -34,8 +34,8 @@ namespace KanbanStockpile
         static MethodInfo GetTopAreaHeight = AccessTools.Property(typeof(ITab_Storage), "TopAreaHeight").GetGetMethod(true);
         public static IEnumerable<CodeInstruction> Transpiler(IEnumerable<CodeInstruction> instructions)
         {
-            //		public static void BeginGroup(Rect position);
-            MethodInfo BeginGroupInfo = AccessTools.Method(typeof(GUI), nameof(GUI.BeginGroup), new Type[] { typeof(Rect) });
+            //	public static void BeginGroup(Rect position);
+            MethodInfo BeginGroupInfo = AccessTools.Method(typeof(Widgets), nameof(Widgets.BeginGroup), new Type[] { typeof(Rect) });
 
             //class Verse.ThingFilter RimWorld.StorageSettings::'filter'
             FieldInfo filterInfo = AccessTools.Field(typeof(StorageSettings), "filter");
