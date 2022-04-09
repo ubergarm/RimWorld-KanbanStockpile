@@ -1,5 +1,7 @@
 ## v1.0.9
 - #20 SteamDeck update compatibility for RimWorld `v1.3.3311` fixes GUI not drawing issue
+- #19 Improve slider widget response when Multiplayer Mod is not loaded (no need to debounce it)
+- Update to `v0.4.0` of `0MultiplayerAPI.dll` sha1sum `c26e786f966fda39e7175e3218d58d74c68c1792` for RW >`v1.3.3311`
 
 ## v1.0.8
 - #16 Add NULL check for map in case thing is coming from inventory etc

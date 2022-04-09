@@ -114,11 +114,14 @@ namespace KanbanStockpile
                 (ks.ssl != tmp.ssl) ) {
 
                 // Accept slider changes no faster than 4Hz (250ms) to prevent spamming multiplayer sync lag
-                DateTime curTime = DateTime.Now;
-                if( (curTime - lastUpdateTime).TotalMilliseconds < 250) {
-                    return;
+                // (only apply this debounce if multiplayer mod is loaded)
+                if (MP.enabled) {
+                    DateTime curTime = DateTime.Now;
+                    if( (curTime - lastUpdateTime).TotalMilliseconds < 250) {
+                        return;
+                    }
+                    lastUpdateTime = curTime;
                 }
-                lastUpdateTime = curTime;
 
                 //KSLog.Message("[KanbanStockpile] Changed Stack Refill Threshold for settings with haulDestination named: " + settings.owner.ToString());
                 ks.srt = tmp.srt;
