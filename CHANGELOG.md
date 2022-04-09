@@ -1,3 +1,6 @@
+## v1.0.9
+- #20 SteamDeck update compatibility for RimWorld `v1.3.3311` fixes GUI not drawing issue
+
 ## v1.0.8
 - #16 Add NULL check for map in case thing is coming from inventory etc
 - Recompile against `0Harmony.dll` sha1sum `54a9eba73d266f1f475a6ff017d2cabd21986120`
