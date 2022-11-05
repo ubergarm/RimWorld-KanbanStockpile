@@ -1,5 +1,10 @@
 <?xml version="1.0" encoding="utf-8" ?>
 <loadFolders>
+    <v1.4>
+        <!-- the world is change  -->
+        <li>/</li>
+        <li>1.4</li>
+    </v1.4>
     <v1.3.3311>
         <!-- newer SteamDeck compatibility version files -->
         <li>/</li>

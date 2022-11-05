@@ -76,6 +76,9 @@ Subscribe to and like my multiplayer compatible configs and modpack
 If you play Minecraft check out my magic themed sky island modpack
 * [Sky Magic Islands](https://www.curseforge.com/minecraft/modpacks/sky-magic-islands)
 
+Also, check out my `7 Days to Die` inspired Minecraft modpack:
+* [Rotten Economy](https://www.curseforge.com/minecraft/modpacks/rotten-economy)
+
 ## References
 * [Steam Workshop KanbanStockpile](https://steamcommunity.com/sharedfiles/filedetails/?id=2287142613)
 * [github.com/ubergarm/RimWorld-KanbanStockpile](https://github.com/ubergarm/RimWorld-KanbanStockpile)
@@ -84,7 +87,7 @@ If you play Minecraft check out my magic themed sky island modpack
 
 ## Keywords
 ```
-#rimworld #rimworld 1.3 #rimworld mod #rimworld mods #rimworld mods 1.3
+#rimworld #rimworld 1.4 #rimworld mod #rimworld mods #rimworld mods 1.4
 #kanban #kanbanstockpile #kanban stockpile #kanbanstockpiles #storage settings
 #kanban stockpiles #kanbanstorage #kanban storage #SatisfiedStorage
 #VarietyMattersStockpile #rimworld search agency #hauling hysteresis

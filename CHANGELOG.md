@@ -1,3 +1,7 @@
+## v1.1.0
+- Add LoadFolders tags for Rimworld 1.4 compatibility
+- Recompile with latest `Lib.Harmony 2.2.2` and `Krafs.Rimworld.Ref 1.4.3537`
+
 ## v1.0.9
 - #20 SteamDeck update compatibility for RimWorld `v1.3.3311` fixes GUI not drawing issue
 - #19 Improve slider widget response when Multiplayer Mod is not loaded (no need to debounce it)
