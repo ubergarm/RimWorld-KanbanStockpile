@@ -1,3 +1,6 @@
+## v1.1.1
+- #21 Add Stack Size Limit merged from @Tmq5521's fork! All credit to Tmq5521 !!!
+
 ## v1.1.0
 - Add LoadFolders tags for Rimworld 1.4 compatibility
 - Recompile with latest `Lib.Harmony 2.2.2` and `Krafs.Rimworld.Ref 1.4.3537`

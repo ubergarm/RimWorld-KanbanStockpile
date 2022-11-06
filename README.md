@@ -21,9 +21,14 @@ are less than or equal to 2 meals left in it (meal stack size is 10).
 of any medicine and drug type now instead of clogging it up nothing but
 rotting herbal medicine and smoke leaf joints!
 
+#### Maximum Stack Size
+* Limit Stack Size for smaller custom sized stacks per stockpile
+* Defaults to `OFF` which gives the same behavior as vanilla.
+
 #### First Class Multiplayer Support
 * Data stored using determenistic dictionary keys and all state mutations properly sync'd!
 * All development done in a multiplayer context locally with arbiter to minimize potential desyncs.
+* Not tested for 1.4 yet...
 
 ## Full Example
 Setup a raw ingredients food Preferred stockpile in the kitchen next to
@@ -51,6 +56,8 @@ Please comment below with results if you test this mod with your own favorite st
 
 ## Credits
 Thanks to bananasss00 for contributing code from their github fork that I was unable to directly merge.
+
+Thanks to [Tmq5521](https://github.com/ubergarm/RimWorld-KanbanStockpile/commit/831e4b3e0090ab2e0b5b23674fa61b95d876b519) fork for Maximum Stack Size feature!
 
 Original idea and inspiration came from my failed attempt to multiplayer patch Satisfied Storage.
 * [SatisfiedStorage](https://steamcommunity.com/sharedfiles/filedetails/?id=2003354028) - hoop
